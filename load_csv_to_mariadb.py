@@ -2,18 +2,21 @@
 sample_paper.csv 데이터를 MariaDB paper.sid_v_09_01 테이블에 적재하는 스크립트
 """
 
+import os
 import pandas as pd
 import mariadb
 import sys
+from dotenv import load_dotenv
 
-# MariaDB 접속 정보
+load_dotenv()
+
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 3306,
-    "user": "root",
-    "password": "Password19",
+    "host": os.getenv("MARIADB_HOST", "localhost"),
+    "port": int(os.getenv("MARIADB_PORT", "3306")),
+    "user": os.getenv("MARIADB_USER"),
+    "password": os.getenv("MARIADB_PASSWORD"),
 }
-DATABASE = "paper"
+DATABASE = os.getenv("MARIADB_DATABASE", "paper")
 TABLE = "sid_v_09_01"
 
 CSV_PATH = "data/sample_paper.csv"
