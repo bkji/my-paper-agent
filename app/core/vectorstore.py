@@ -45,6 +45,102 @@ def get_milvus_client() -> MilvusClient:
     return _client
 
 
+def ensure_database() -> None:
+    """Milvus database가 없으면 생성한다."""
+    from pymilvus import connections, db
+
+    conn_alias = "default"
+    connections.connect(
+        alias=conn_alias,
+        host=settings.MILVUS_HOST,
+        port=settings.MILVUS_PORT,
+    )
+    existing = db.list_database(using=conn_alias)
+    if settings.MILVUS_DATABASE not in existing:
+        db.create_database(settings.MILVUS_DATABASE, using=conn_alias)
+        logger.info("Milvus database '%s' created", settings.MILVUS_DATABASE)
+    connections.disconnect(conn_alias)
+
+
+def create_collection_if_not_exists() -> None:
+    """컬렉션이 없으면 생성한다. database도 함께 보장."""
+    from app.core.embeddings import EMBEDDING_DIM
+
+    ensure_database()
+    client = get_milvus_client()
+    collection_name = settings.MILVUS_COLLECTION
+
+    if client.has_collection(collection_name):
+        logger.info("Collection '%s' already exists", collection_name)
+        return
+
+    schema = CollectionSchema(description="Paper chunks with dense and sparse vectors")
+
+    schema.add_field(FieldSchema("id", DataType.INT64, is_primary=True, auto_id=True))
+    schema.add_field(FieldSchema("mariadb_id", DataType.INT64))
+    schema.add_field(FieldSchema("filename", DataType.VARCHAR, max_length=512))
+    schema.add_field(FieldSchema("doi", DataType.VARCHAR, max_length=256))
+    schema.add_field(FieldSchema("coverdate", DataType.INT64))
+    schema.add_field(FieldSchema("title", DataType.VARCHAR, max_length=65535))
+    schema.add_field(FieldSchema("paper_keyword", DataType.VARCHAR, max_length=65535))
+    schema.add_field(FieldSchema("paper_text", DataType.VARCHAR, max_length=65535))
+    schema.add_field(FieldSchema("volume", DataType.INT16))
+    schema.add_field(FieldSchema("issue", DataType.INT16))
+    schema.add_field(FieldSchema("totalpage", DataType.INT16))
+    schema.add_field(FieldSchema("referencetotal", DataType.INT16))
+    schema.add_field(FieldSchema("author", DataType.VARCHAR, max_length=65535))
+    schema.add_field(FieldSchema("references", DataType.VARCHAR, max_length=65535))
+    schema.add_field(FieldSchema("chunk_id", DataType.INT16))
+    schema.add_field(FieldSchema("chunk_total_counts", DataType.INT16))
+    schema.add_field(FieldSchema("bm25_keywords", DataType.VARCHAR, max_length=65535, enable_analyzer=True))
+    schema.add_field(FieldSchema("parser_ver", DataType.VARCHAR, max_length=20))
+    schema.add_field(FieldSchema("embeddings", DataType.FLOAT_VECTOR, dim=EMBEDDING_DIM))
+    schema.add_field(FieldSchema("bm25_keywords_sparse", DataType.SPARSE_FLOAT_VECTOR))
+    schema.add_field(FieldSchema("embedding_model_id", DataType.VARCHAR, max_length=128))
+
+    bm25_fn = Function(
+        name="bm25_fn",
+        function_type=FunctionType.BM25,
+        input_field_names=["bm25_keywords"],
+        output_field_names=["bm25_keywords_sparse"],
+    )
+    schema.add_function(bm25_fn)
+
+    client.create_collection(collection_name=collection_name, schema=schema)
+
+    index_params = client.prepare_index_params()
+    index_params.add_index(
+        field_name="embeddings",
+        index_type="IVF_FLAT",
+        metric_type="IP",
+        params={"nlist": 128},
+    )
+    index_params.add_index(
+        field_name="bm25_keywords_sparse",
+        index_type="SPARSE_INVERTED_INDEX",
+        metric_type="BM25",
+        params={"bm25_k1": 1.2, "bm25_b": 0.75},
+    )
+    client.create_index(collection_name=collection_name, index_params=index_params)
+    client.load_collection(collection_name)
+
+    logger.info("Collection '%s' created and loaded", collection_name)
+
+
+@observe(as_type="span", name="milvus_insert")
+async def insert_chunks(
+    chunks: list[dict[str, Any]],
+    **kwargs,
+) -> dict[str, Any]:
+    """청크 데이터를 Milvus에 삽입한다."""
+    client = get_milvus_client()
+    result = client.insert(collection_name=settings.MILVUS_COLLECTION, data=chunks)
+    inserted = result.get("insert_count", len(chunks))
+    logger.info("insert_chunks done: inserted=%s", inserted)
+    langfuse_context(output={"inserted": inserted})
+    return result
+
+
 @observe(as_type="retriever", name="milvus_hybrid_search")
 async def hybrid_search(
     query_vector: list[float],
