@@ -1,0 +1,1372 @@
+﻿mariadb_id,filename,doi,coverdate,title,paper_keyword,paper_text,volume,issue,totalpage,referencetotal,author,references,chunk_id,chunk_total_counts,bm25_keywords,parser_ver
+1,file01.txt,https://doi.org/10.1002/jsid.2117,20260201,Analysis of Volume Holographic Gratings With Statistical Distribution,"Volume Holographic Grating (VHG), Finite Element Method (FEM), Diffraction Characteristics, Refractive Index Modulation, Fourier Expansion","ABSTRACT
+For simulating the actual diffraction characteristics of the volume holographic grating (VHG), this paper incorporates multiple periodic gratings into the finite element method (FEM) analysis. The grating periods and refractive index modulation are modeled according to statistical distribution. Thus, the refractive index distribution within the gratings is reconstructed through the Fourier expansion. Utilizing the enhanced model, a quantitative analysis was performed to examine the relationships among model parameters, in relation to the diffraction characteristics. The results demonstrated that the optimized model achieves a correlation degree R 2 of 98% with experimental data. This model also provided a reliable theoretical basis for the precise design of optical systems based on VHGs.",34,2,10,40,"Zhongwen Shen, Chao Ping Chen, Zhendong Wu, Yan Yang, Dawei Zhu","1S. Wang, L. Dai, C. Lin, et al., “Study on the Design Method of High-Resolution Volume-Phase Holographic Gratings,” Sensors 24, no. 19 (2024): 6493.
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+2C. M. Tsai, S. Vyas, and Y. Luo, “Common-Path Digital Holographic Microscopy Based on a Volume Holographic Grating for Quantitative Phase Imaging,” Optics Express 32, no. 5 (2024): 7919–7930.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+3C. P. Chen, D. S. Kim, and C. G. Jhun, “Electro-Optical Effects of a Color Polymer-Dispersed Liquid Crystal Device by Micro-Encapsulation With a Pigment-Doped Shell,” Crystals 9, no. 7 (2019): 364.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+4K. Y. Lee, S. H. Jeung, B. M. Cho, and N. Kim, “Photopolymer-Based Surface-Normal Input/Output Volume Holographic Grating Coupler for 1550-Nm Optical Wavelength,” Journal of the Optical Society of Korea 16, no. 1 (2012): 17–21.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5P. Chen, Y. Jin, D. He, et al., “Design and Fabrication of Multiplexed Volume Bragg Gratings as Angle Amplifiers in High Power Beam Scanning System,” Optics Express 26, no. 19 (2018): 25336–25346.
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+6G. B. Ingersoll and J. R. Leger, “Optimization of Multi-Grating Volume Holographic Spectrum Splitters for Photovoltaic Applications,” Applied Optics 55, no. 21 (2016): 5399–5406.
+CAS
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+7J. Zhao, B. Chrysler, and R. K. Kostuk, “Holographic Low Concentration Optical System Increasing Light Collection Efficiency of Regular Solar Panels,” Journal of Photonics for Energy 11 (2021): 027002.
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8F. Lu, J. Hua, F. Zhou, et al., “Pixelated Volume Holographic Optical Element for Augmented Reality 3D Display,” Optics Express 30, no. 10 (2022): 15929–15938.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+9C. P. Chen, Y. Su, and C. G. Jhun, “Recent Advances in Holographic Recording Media for Dynamic Holographic Display,” Journal of Optics and Photonics 1 (2014): 1–8.
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+10Y. Xiong, Z. He, C. P. Chen, et al., “Coherent Backlight System for Flat-Panel Holographic 3D Display,” Optics Communication 296 (2013): 41–46.
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+11L. Zhou, C. P. Chen, Y. Wu, et al., “See-Through Near-Eye Displays Enabling Vision Correction,” Optics Express 25, no. 3 (2017): 2130–2142.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+12C. Neipp, J. Frances, F. J. Martinez, et al., “Optimization of Photopolymer Materials for the Fabrication of a Holographic Waveguide,” Polymers 9, no. 9 (2017): 395.
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+13Y. Gu, Y. Weng, R. Wei, et al., “Holographic Waveguide Display With Large Field of View and High Light Efficiency Based on Polarized Volume Holographic Grating,” IEEE Photonics Journal 14, no. 1 (2021): 7003707.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+14C. P. Chen, Y. Cui, Y. Ye, et al., “Wide-Field-of-View Near-Eye Display With Dual-Channel Waveguide,” Photonics 8, no. 12 (2021): 557.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+15H. Mukawa, K. Akutsu, I. Matsumura, et al., “A Full-Color Eyewear Display Using Planar Waveguides With Reflection Volume Holograms,” Journal of the Society for Information Display 17, no. 3 (2009): 185–193.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+16S. Gallego, D. Puerto, M. Morales-Vidal, et al., “Tunable Waveguides Couplers Based on HPDLC for See-Through Applications,” Polymers 13, no. 11 (2021): 1858.
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+17J. Xiong, K. Yin, K. Li, and S.-T. Wu, “Holographic Optical Elements for Augmented Reality: Principles, Present Status, and Future Perspectives,” Advanced Photonics Research 2, no. 1 (2021): 2000049.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+18H. Kogelnik, “Coupled Wave Theory for Thick Hologram Gratings,” Bell System Technical Journal 48, no. 9 (1969): 2909–2947.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+19M. G. Moharam and T. K. Gaylord, “Rigorous Coupled-Wave Analysis of Planar-Grating Diffraction,” Journal of the Optical Society of America 71, no. 7 (1981): 811–818.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+20M. G. Moharam and T. K. Gaylord, “Three-Dimensional Vector Coupled-Wave Analysis of Planar-Grating Diffraction,” Journal of the Optical Society of America 73, no. 9 (1983): 1105–1112.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+21J. M. Tsui, C. Thompson, V. Mehta, J. M. Roth, V. I. Smirnov, and L. B. Glebov, “Coupled-Wave Analysis of Apodized Volume Gratings,” Optics Express 12, no. 26 (2004): 6642–6653.
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+22A. Taflove and S. C. Hagness, Computational Electrodynamics: The Finite-Difference Time-Domain Method, 3rd ed. (Artech House Publishers, 2005).
+Google Scholar
+Samsung Display Co. Ltd.
+23S. D. Wu and E. N. Glytsis, “Volume Holographic Grating Couplers: Rigorous Analysis by Use of the Finite-Difference Frequency-Domain Method,” Applied Optics 43, no. 5 (2004): 1009–1023.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+24A. D. Papadopoulos and E. N. Glytsis, “Preferential-Order Waveguide Grating Couplers: A Comparative Rigorous Analysis Using the Finite-Difference Time-Domain Method,” Applied Optics 49, no. 30 (2010): 5787–5798.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+25A. D. Papadopoulos and E. N. Glytsis, “Optical Waveguide Grating Couplers: 2nd-Order and 4th-Order Finite-Difference Time-Domain Analysis,” Applied Optics 48, no. 27 (2009): 5164–5175.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+26S. Wu and E. Glytsis, “Finite-Number-of-Periods Holographic Gratings With Finite-Width Incident Beams: Analysis Using the Finite-Difference Frequency-Domain Method,” Journal of the Optical Society of America. A 19 (2002): 2018–2029.
+Google Scholar
+Samsung Display Co. Ltd.
+27T. Fujisawa and M. Koshiba, “Analysis of Photonic Crystal Waveguide Gratings With Coupled-Mode Theory and a Finite-Element Method,” Applied Optics 45 (2006): 4114–4121.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+28T. Delort and D. Maystre, “Finite-Element Method for Gratings,” Journal of the Optical Society of America. A 10 (1993): 2592–2601.
+Google Scholar
+Samsung Display Co. Ltd.
+29L. Zagaglia, F. Floris, and P. O'Brien, “Wavelength Selection in Focusing Non-Uniform Grating Couplers: A Coupling Efficiency Curve Asymmetry and Bandwidth Analysis,” Photonics and Nanostructures 50 (2022): 101019.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+30J. Ma, T. Wu, Y. Cui, J. Li, J. Wang, and P. Su, “Modified Monomer Diffusion Model for Volume Holographic Grating Formation in Photopolymers,” Applied Optics 59, no. 13 (2020): 3952–3957.
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+31T. Babeva, I. Naydenova, S. Martin, and V. Toal, “Method for Characterization of Diffusion Properties of Photopolymerisable Systems,” Optics Express 16, no. 12 (2008): 8487–8497.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+32Y. Luo, J. Castro, J. K. Barton, R. K. Kostuk, and G. Barbastathis, “Simulations and Experiments of Aperiodic and Multiplexed Gratings in Volume Holographic Imaging Systems,” Optics Express 18, no. 18 (2010): 19273–19285.
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+33Z. He, C. P. Chen, H. Gao, et al., “Dynamics of Peristrophic Multiplexing in Holographic Polymer-Dispersed Liquid Crystal,” Liquid Crystals 41, no. 5 (2014): 673–684.
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+34H. Li, Y. Qi, C. Guo, R.’. Malallah, and J. T. Sheridan, “Holographic Characterization of Diffraction Grating Modulation in Photopolymers,” Applied Optics 57, no. 22 (2018): E107–E117.
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+35S. Piazzolla and B. K. Jenkins, “First-Harmonic Diffusion Model for Holographic Grating Formation in Photopolymers,” Journal of the Optical Society of America B: Optical Physics 17, no. 7 (2000): 1143–1148.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+36V. Hima, A. B. Sreebha, R. Prasad, G. Tiwari, and V. P. Mahadevan Pillai, “Fabrication of an Efficient Green Sensitive Photopolymer for Holographic Applications,” Materials Today Proceedings 57 (2021): 2031–2035.
+Google Scholar
+Samsung Display Co. Ltd.
+37Y. Qiu, Z. Zhu, X. Wang, X. Wang, Y. Tang, and X. Zhang, “Diffraction Efficiency Enhanced Volume Holographic Gratings via Coupling Ag Thin Film,” IEEE Photonics Journal 11, no. 1 (2019): 6100805.
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+38Z. Shen, Y. Weng, Y. Zhang, C. Wang, A. Liu, and X. Li, “Holographic Recording Performance of Acrylate-Based Photopolymer Under Different Preparation Conditions for Waveguide Display,” Polymers 13, no. 6 (2021): 936.
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+39J. Guo, Y. Tu, L. Yang, L. Wang, and B. Wang, “Design of a Multiplexing Grating for Color Holographic Waveguide,” Optical Engineering 54, no. 12 (2015): 125105.
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+40J. W. Goodman, Statistical Optics, 2nd ed. (Wiley, 2005).
+Google Scholar
+Samsung Display Co. Ltd.",1,1,Volume Holographic Grating (VHG)  Finite Element Method (FEM)  Diffraction Characteristics  Refractive Index Modulation  Fourier Expansion Analysis of Volume Holographic Gratings With Statistical Distribution,v.0.1
+2,file02.txt,https://doi.org/10.1002/jsid.2005,20241201,Three hundred sixty-degree viewable linear grooves 3D display,"3D image, arc 3D display, conical display, curved surface","Abstract
+We proposed a linear grooves 3D display that can display 360° viewable 3D images by creating linear grooves that correspond to the viewpoint positions. In the conventional method, arc-shaped grooves are drawn on a flat substrate of transparent film. However, depending on the viewing position, the image may be distorted. In addition, when a flat substrate is bent into a curved shape, the image is more affected than one observed in a flat shape. Furthermore, the conventional method of arc 3D display method cannot display a 3D image that corresponds to the viewpoint position. In this paper, we propose design and fabrication methods that reduce the image distortion for both flat and curved shapes. A 3D image displayed by the proposed method can change depending on the viewpoint position, and a natural 3D image with motion parallax can be observed. In the experiment, our proposed method fabricated a 360° 3D display by calculating the linear grooves and presented natural 3D images with smooth motion parallax.",32,12,10,24,"Akua Kawakami, Daisuke Okuyama, Haruki Mizushina, Shiro Suyama, Kenji Yamamoto","1Sinha RY, Raje SR, Rao GA. Three-dimensional laparoscopy: principles and practice. J Minimal Access Surg. 2017; 13(3): 165–169. https://doi.org/10.4103/0972-9941.181761
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+2Rogers B, Graham M. Motion parallax as an independent cue for depth perception. Perception. 1979; 8(2): 125–134. https://doi.org/10.1068/p080125
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+3Kongsilp S, Matthew DN. Motion parallax from head movement enhances stereoscopic displays by improving presence and decreasing visual fatigue. Displays. 2017; 49: 72–79. https://doi.org/10.1016/j.displa.2017.07.001
+View
+Google Scholar
+Samsung Display Co. Ltd.
+4Yamamoto K, Ichihashi Y, Senoh T, Oi R, Kurita T. 3D objects enlargement technique using an optical system and multiple SLMs for electronic holography. Opt Express. 2012; 20: 21137–21144.
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Sando Y, Satoh K, Barada D, Yatagai T. Holographic augmented reality display with conical holographic optical element for wide viewing zone. Light: Adv Manuf. 2022; 3(12): 26–34. https://doi.org/10.37188/lam.2022.012
+View
+Google Scholar
+Samsung Display Co. Ltd.
+6Takaki Y, Nago N. Multi-projection of lenticular displays to construct a 256-view super multi-view display. Opt Express. 2010; 18: 8824–8835.
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+7Takaki Y, Urano Y, Kashiwada S, Ando H, Nakamura K. Super multi-view windshield display for long-distance image information presentation. Opt Express. 2011; 19: 704–716.
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8Watanabe Y, Kakeya H. A full-HD super-multiview display based on adaptive time-division multiplexing parallax barrier. IDW19. 2020; 8: 230–237.
+Google Scholar
+Samsung Display Co. Ltd.
+9Xing Y, Lin XY, Zhang LB, Xia YP, Zhang HL, Cui HY, et al. Integral imaging-based tabletop light field 3D display with large viewing angle. Opto-Electron Adv. 2023;220178: 6. https://doi.org/10.29026/oea.2023.220178
+View
+Google Scholar
+Samsung Display Co. Ltd.
+10Martínez-Corral M, Javidi B. Fundamentals of 3D imaging and displays: a tutorial on integral imaging, light-field, plenoptic systems. Adv Opt Photon. 2018; 10: 512–566.
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+11Ni L, Li Z, Li H, Liu X. 360-degree large-scale multiprojection light-field 3D display system. Appl Opt. 2018; 57: 1817–1823.
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+12Yu X, Sang X, Gao X, Yan B, Chen D, Liu B, et al. 360-degree tabletop 3D light-field display with ring-shaped viewing range based on aspheric conical lens array. Opt Express. 2019; 27: 26738–26748.
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+13Plummer WT, Gardner LR. A mechanically generated hologram? Appl Opt. 1922; 31(31): 6585–6588. https://doi.org/10.1364/AO.31.006585
+View
+Google Scholar
+Samsung Display Co. Ltd.
+14Taguchi H, Mizushina H, Yamamoto K, Suyama S. Fresnel arc 3D display for rewriting 3D image with high-pixel-density arrangement and automatic arc-scratch generation. The 28th International Display Workshops (IDW '21), vol. 28; 2021. p. 889–892. https://doi.org/10.36463/idw.2021.0889
+View
+Google Scholar
+Samsung Display Co. Ltd.
+15Yasui T, Nakano K, Mizushina H, Suyama S, Yamamoto K. Improvement on sticking depth issue of 3D image by Arc 3D display with moving head or moving arc 3D display. The 12th International Conference on 3D Systems and Applications; 2021. p. 25–26.
+Google Scholar
+Samsung Display Co. Ltd.
+16Koyama S, Mizushina H, Suyama S. Compact layered multi-view display using arc 3D display as directional backlight. The 24th International Display Workshops (IDW '17); 2017. p. 947–950.
+Google Scholar
+Samsung Display Co. Ltd.
+17Maeda C, Toyama S, Saka N, Yamamoto H, Suyama S. Active liquid-crystal device for arc 3D display. IDW '11, vol. 1; 2011. p. 279–282.
+Google Scholar
+Samsung Display Co. Ltd.
+18Awata Y, Mizushina H, Suyama S. Influence of decreasing motion parallax widths in arc 3D display on perceived depth degradation by decreasing visual acuity of one eye. The 24th International Display Workshops (IDW '17); 2017. p. 939–942.
+Google Scholar
+Samsung Display Co. Ltd.
+19Suyama S, Mizushina H, Yamamoto H. Theoretical and experimental perceived depths in arc 3D displays. IEEE Ind Appl Mag. 2020; 27: 69–81.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+20Kawakami A, Mizushina H, Suyama S, Yamamoto K. Analysis and fabrication for the dimensional expansion of arc 3D display to cone-shaped display. Opt Rev. 2023; 30: 93–99. https://doi.org/10.1007/s10043-022-00772-x
+View
+Google Scholar
+Samsung Display Co. Ltd.
+21Yoshida S. fVisiOn: 360-degree viewable glasses-free tabletop 3D display composed of conical screen and modular projector arrays. Opt Express. 2016; 24: 13194–13203.
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+22Xia X, Liu X, Li H, Zheng Z, Wang H, Peng Y, Shen W. A 360-degree floating 3D display based on light field regeneration. Opt Express. 2013; 21: 11237–11247.
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+23 Unity. https://unity.com/
+Google Scholar
+Samsung Display Co. Ltd.
+24Pi Photonics Inc.. https://www.piphotonics.co.jp/EN/holorerit/index.html
+Google Scholar
+Samsung Display Co. Ltd.",1,1,3D image  arc 3D display  conical display  curved surface Three hundred sixty-degree viewable linear grooves 3D display,v.0.1
+3,file03.txt,https://doi.org/10.1002/jsid.2009,20241201,Highly efficient green-emissive organic light emitting diodes based on multiple-resonance boron-nitrogen materials,,"Abstract
+Green-emission phosphor-sensitized OLEDs were demonstrated to achieve extremely high performance. SY-FGD8-based sensitized top-emission devices achieved current efficiency of 232.8 cd/A@10 mA/cm2, LT95@50 mA/cm2, room temperature of 71 h and LT80@20 mA/cm2, 85°C of 187 h, which are greatly improved by 28%, 29%, and 65%, respectively, compared to phosphorescent devices. Notably, SY-FGD8 exhibited excellent compatibility with different host and phosphorescent sensitizers.",32,12,8,25,"Xudong Cao, Xiao Liang, Kai Xu, Chong Li, Zhaochao Zhang, Lian Duan","1Baldo M, Thompson M, Forrest S. High-efficiency fluorescent organic light-emitting devices using a phosphorescent sensitizer. Nature. 2000; 403(6771): 750–753. https://doi.org/10.1038/35001541
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+2D'andrade B, Baldo M, Adachi C, Brooks J, Thompson ME, Forrest SR. High-efficiency yellow double-doped organic light-emitting devices based on phosphor-sensitized fluorescence. Appl Phys Lett. 2001; 79(7): 1045–1047. https://doi.org/10.1063/1.1388159
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+3Lei G, Wang L, Qiu Y. Blue phosphorescent dye as sensitizer and emitter for white organic light-emitting diodes. Appl Phys Lett. 2004; 85(22): 5403–5405. https://doi.org/10.1063/1.1827326
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+4Sun J, Ahn H, Kang S, Ko SB, Song D, Um HA, et al. Exceptionally stable blue phosphorescent organic light-emitting diodes. Nat Photonics. 2022; 16(3): 212–218. https://doi.org/10.1038/s41566-022-00958-4
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Cao X, Liang X, Li C, Xu K, Duan L. Multiple-resonance boron-nitrogen materials: effective emitters for high-performance green-emission OLEDs. SID Int Symp: Dig Technol Papers. 2023; 54(1): 474–476. https://doi.org/10.1002/sdtp.16595
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+6Nakanotani H, Higuchi T, Furukawa T, Masui K, Morimoto K, Numata M, et al. High-efficiency organic light-emitting diodes with fluorescent emitters. Nat Common. 2014; 5(1): 4016. https://doi.org/10.1038/ncomms5016
+View
+CAS
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+7Cai M, Zhang D, Duan L. High performance thermally activated delayed fluorescence sensitized organic light-emitting diodes. Chem Rec. 2019; 19(8): 1611–1623. https://doi.org/10.1002/tcr.201800148
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8Nakanotani H, Furukawa T, Hosokai T, Hatakeyama T, Adachi C. Light amplification in molecules exhibiting thermally activated delayed fluorescence. Adv Opt Mater. 2017; 5(12):1700051. https://doi.org/10.1002/adom.201700051
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+9Zhang Y, Zhang D, Wei J, Liu Z, Lu Y, Duan L. Multi-resonance induced thermally activated delayed fluorophores for narrowband green OLEDs. Angew Chem Int Ed. 2019; 58(47): 16912–16917. https://doi.org/10.1002/anie.201911266
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+10Kondo Y, Yoshiura K, Kitera S, Nishi H, Oda S, Gotoh H, et al. Narrowband deep-blue organic light-emitting diode featuring an organoboron-based emitter. Nat Photonics. 2019; 13(10): 678–682. https://doi.org/10.1038/s41566-019-0476-5
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+11Zhang Y, Zhang D, Wei J, Hong X, Lu Y, Hu D, et al. Achieving pure green electroluminescence with CIEy of 0.69 and EQE of 28.2% from an aza-fused multi-resonance emitter. Angew Chem Int Ed. 2020; 132(40): 17652–17656. https://doi.org/10.1002/ange.202008264
+View
+Google Scholar
+Samsung Display Co. Ltd.
+12Yang M, Park IS, Yasuda T. Full-color, narrowband, and high-efficiency electroluminescence from boron and carbazole embedded polycyclic heteroaromatics. J Am Chem Soc. 2020; 142(46): 19468–19472. https://doi.org/10.1021/jacs.0c10081
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+13Xu Y, Li C, Li Z, Wang J, Xue J, Wang Q, et al. Highly efficient electroluminescent materials with high color purity based on strong acceptor attachment onto B–N-containing multiple resonance frameworks. CCS Chem. 2022; 4(6): 2065–2079. https://doi.org/10.31635/ccschem.021.202101033
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+14Zhang Y, Li G, Wang L, Huang T, Wei J, Meng G, et al. Fusion of multi-resonance fragment with conventional polycyclic aromatic hydrocarbon for nearly BT. 2020 green emission. Angew Chem Int Ed. 2022; 61(24):e202202380. https://doi.org/10.1002/anie.202202380
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+15Liu J, Zhu Y, Tsuboi T, Deng C, Lou W, Wang D, et al. Toward a BT. 2020 green emitter through a combined multiple resonance effect and multi-lock strategy. Nat Common. 2022; 13(1):4876. https://doi.org/10.1038/s41467-022-32607-3
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+16Wu Z, Xin Y, Lu C, et al. Precise regulation of multiple resonance distribution regions of a b, n-embedded polycyclic aromatic hydrocarbon to customize its BT2020 green emission. Angew Chem Int Ed. 2024; 63(7):e202318742. https://doi.org/10.1002/anie.202318742
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+17Fan T, Zhu S, Cao X, Liang X, Du M, Zhang Y, et al. Tailored design of π-extended multi-resonance organoboron using indolo [3, 2-b] indole as a multi-nitrogen bridge. Angew Chem Int Ed. 2023; 62(48):e202313254. https://doi.org/10.1002/anie.202313254
+View
+CAS
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+18Liao X, Zhu J, Yuan L, et al. Efficient organic light-emitting diodes based on iridium (iii) complexes containing indolo [3, 2, 1-jk] carbazole derivatives with narrow emission bandwidths and low efficiency roll-offs. J Mater Chem C. 2021; 9(26): 8226–8232. https://doi.org/10.1039/D1TC01449H
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+19Wang J, Xie M, Pang H, Zhang C, Sang M, Zhang Q, et al. High performance red and green phosphorescent emitters suitable for the BT. 2020 color gamut. J Soc Info Display. 2023; 31(6): 457–465. https://doi.org/10.1002/jsid.1205
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+20Uoyama H, Goushi K, Shizu K, Nomura H, Adachi C. Highly efficient organic light-emitting diodes from delayed fluorescence. Nature. 2012; 492(7428): 234–238. https://doi.org/10.1038/nature11687
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+21Tao Y, Yuan K, Chen T, Xu P, Li H, Chen R, et al. Thermally activated delayed fluorescence materials towards the breakthrough of organoelectronics. Adv Mater. 2014; 26(47): 7931–7958. https://doi.org/10.1002/adma.201402532
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+22Zhang Y, Zhang D, Wei J, Hong X, Lu Y, Hu D, et al. Achieving pure green electroluminescence with CIEy of 0.69 and EQE of 28.2% from an aza-fused multi-resonance emitter. Angew Chem Int Ed. 2020; 59(40): 17499–17503. https://doi.org/10.1002/anie.202008264
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+23Luo X, Song S, Ni H, Ma H, Yang D, Ma D, et al. Multiple-resonance-induced thermally activated delayed fluorescence materials based on indolo[3,2,1-jk]carbazole with an efficient narrowband pure-green electroluminescence. Angew Chem Int Ed. 2022; 61(41):e202209984. https://doi.org/10.1002/anie.202209984
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+24Xu Y, Wang Q, Wei J, Peng X, Xue J, Wang Z, et al. Constructing organic electroluminescent material with very high color purity and efficiency based on polycyclization of the multiple resonance parent core. Angew Chem Int Ed. 2020; 61(30):e202204652. https://doi.org/10.1002/anie.202204652
+View
+Google Scholar
+Samsung Display Co. Ltd.
+25Yang W, Li N, Miao J, Zhan L, Gong S, Huang Z, et al. Simple double hetero[5]helicenes realize highly efficient and narrowband circularly polarized organic light-emitting diodes. CCS Chem. 2022; 4(11): 3463–3471. https://doi.org/10.31635/ccschem.022.202101661
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.",1,1,Highly efficient green-emissive organic light emitting diodes based on multiple-resonance boron-nitrogen materials,v.0.1
+4,file04.txt,https://doi.org/10.1002/jsid.2012,20241201,Short range optical communication with GaN-on-Si microLED and microPD matrices,"characterization, communication FDTD, GaN, microLED, microPD, TCAD, VLC","Abstract
+(In)GaN microLEDs have reached a high degree of maturity due to their development in the lighting industry. Their robustness and high efficiency make them ideal candidates for high-brightness, high-resolution micro-displays. Beyond display applications, microLEDs are being explored for non-display uses, including wireless Visible Light Communication (VLC) and parallel communication via multicore fiber. This study investigates short-range chip-to-chip optical communication using InGaN/GaN microLEDs and micro Photodiodes (microPDs). Leveraging processes developed for micro-displays, we address the challenges of integrating GaN microLEDs and microPDs on ASICs. We outline the main figures of merit, including expected energy efficiency, optical coupling to multicore fibers or waveguides, and the spectral efficiency of InGaN/GaN microPDs correlated with TCAD simulation and experimental transmission results. Our study highlights the potential of GaN microLEDs and microPDs for massively parallel, energy-efficient data transmission, paving the way for innovative short-range and energy-efficient optical communication solutions.",32,12,18,34,"Patrick Le Maitre, Anthony Cibié, Fabian Rol, Stéphanie Jacob, Nicolas Michit, Sultan El Badaoui, Julia Simon, Bastien Miralles, Clément Ballot, Bernard Aventurier, Paolo De Martino","1Zhang Y, Xu R, Kang Q, Zhang X, Zhang ZH. Recent advances on GaN-based micro-LEDs. Micromachines. 2023; 14(5):991. https://doi.org/10.3390/mi14050991
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+2Kumar V, Kymissis I. MicroLED/LED electro-optical integration techniques for non-display applications. Appl Phys Rev. 2023; 10(2):021306. https://doi.org/10.1063/5.0125103
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+3Wang K, Song T, Wang Y, Fang C, He J, Nirmalathas A, et al. Evolution of short-range optical wireless communications. J Light Technol. 2023; 41(4): 1019–1040. https://doi.org/10.1109/JLT.2022.3215590
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+4Xu H, Davitt KM, Dong W, Song YK, Patterson WR, Nurmikko AV, et al. Integration of a matrix addressable blue/green LED array with multicore imaging fiber for spatiotemporal excitation in endoscopic biomedical applications. Phys Status Solidi Curr Topics Solid State Phys. 2008; 5(6): 2299–2302. https://doi.org/10.1002/pssc.200778716
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Zhu L, Lai PT, Choi HW. An emissive GaN micro-LED array for visible-light multi-channel communication. 2010 Photon Global Conf PGC 2010. 2010; 2–4.
+Google Scholar
+Samsung Display Co. Ltd.
+6Pezeshki B, Tselikov A, Danesh C, Kalman R. 8x 2Gb/s LED-based optical link at 420nm for chip-to-chip applications. IEEE. 2021; 8–10.
+Google Scholar
+Samsung Display Co. Ltd.
+7Pezeshki B, Rangarajan S, Tselikov A, Afifi E, Huang I, Pepper J, et al. 304 channel MicroLED based CMOS transceiver IC with aggregate 1 Tbps and sub-pJ per bit capability. IEEE. 2024; 8–10.
+Google Scholar
+Samsung Display Co. Ltd.
+8Park TY, Wang Y, Alkhazragi O, Min JH, Ng TK, Ooi BS. 2-Gb/s ultraviolet-light optical wireless communication by InGaN/GaN multi-quantum well dual-function micro-photodetector. Appl Phys Lett. 2024; 124(6). https://doi.org/10.1063/5.0185656
+View
+Google Scholar
+Samsung Display Co. Ltd.
+9Ho KT, Chen R, Liu G, Shen C, Holguin-Lerma J, Al-Saggaf AA, et al. 32 gigabit-per-second visible light communication link with InGaN/GaN MQW micro-photodetector. Opt Express. 2018; 26(3): 3037–3045. https://doi.org/10.1364/OE.26.003037
+View
+CAS
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+10Xu Z, Luo Z, Lin X, Shen C, Wang X, Zhang J, et al. 15.26Gb/s Si-substrate GaN high-speed visible light photodetector with super-lattice structure. Opt Express. 2023; 31(20):33064. https://doi.org/10.1364/OE.498632
+View
+CAS
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+11Memon MH, Yu H, Luo Y, Kang Y, Chen W, Li D, et al. A three-terminal light emitting and detecting diode. Nature Electron. 2024; 7(4): 279–287. https://doi.org/10.1038/s41928-024-01142-y
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+12Yu H, Xiao S, Memon MH, Luo Y, Wang R, Li D, et al. Dual-functional triangular-shape micro-size light-emitting and detecting diode for on-chip optical communication in the deep ultraviolet band. Laser Photon Rev. 2024; 2300789(8): 1–8. https://doi.org/10.1002/lpor.202300789
+View
+Google Scholar
+Samsung Display Co. Ltd.
+13Lin R, Liu X, Zhou G, Qian Z, Cui X, Tian P. InGaN micro-LED array enabled advanced underwater wireless optical communication and underwater charging. Adv Optical Mater. 2021; 9(12): 1–10. https://doi.org/10.1002/adom.202002211
+View
+Google Scholar
+Samsung Display Co. Ltd.
+14Yu H, Memon MH, Wang R, Xiao S, Li D, Luo Y, et al. Miniaturized AlGaN-based deep-ultraviolet light-emitting and detecting diode with superior light-responsive characteristics. Adv Optical Mater. 2024; 2400499(22): 1–8. https://doi.org/10.1002/adom.202400499
+View
+Google Scholar
+Samsung Display Co. Ltd.
+15Singh KJ, Huang YM, Ahmed T, Liu AC, Chen SWH, Liou FJ, et al. Micro-LED as a promising candidate for high-speed visible light communication. Appl Scie. 2020; 10(20): 1–32.
+Google Scholar
+Samsung Display Co. Ltd.
+16Margalit N, Xiang C, Bowers SM, Bjorlin A, Blum R, Bowers JE. Perspective on the future of silicon photonics and electronics. Appl Phys Lett. 2021; 118(22). https://doi.org/10.1063/5.0050117
+View
+Google Scholar
+Samsung Display Co. Ltd.
+17Szilagyi L, Khafaji M, Pliva J, Henker R, Ellinger F. 40-Gbit/s 850-nm VCSEL-based full-CMOS optical link with power-data rate adaptivity. IEEE Photon Technol Lett. 2018; 30(7): 611–613. https://doi.org/10.1109/LPT.2018.2808404
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+18Michard A, Carpentier JF, Michit N, Le Maitre P, Benabes P, Ferreira PM. A sub-pJ/bit, low-ER Mach-Zehnder-based transmitter for chip-to-chip optical interconnects. IEEE J Select Top Quantum Electron. 2020; 26(2): 1–10. https://doi.org/10.1109/JSTQE.2019.2954705
+View
+Google Scholar
+Samsung Display Co. Ltd.
+19Templier F. GaN-based emissive microdisplays: a very promising technology for compact, ultra-high brightness display systems. J Soc Inf Disp. 2016; 24(11): 669–675. https://doi.org/10.1002/jsid.516
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+20Bower CA, Bonafede S, Raymond B, Pearson A, Prevatte C, Weeks T, et al. High-brightness displays made with micro-transfer printed flip-chip microLEDs. Proc - Electron Components Technol Conf. 2020;2020-June:175–81.
+Google Scholar
+Samsung Display Co. Ltd.
+21Steudel S, Vertommen J, Boulbar E, Buscemi G, Bach L, Huylenbroeck S, et al. MircoLED display integration on 300mm advanced CMOS platform. Digest Techn Papers - SID Int Symp. 2022; 53(1): 748–751. https://doi.org/10.1002/sdtp.15598
+View
+Google Scholar
+Samsung Display Co. Ltd.
+22Quesnel E, Lagrange A, Vigier M, Consonni M, Tournaire M, Le Marchand V, et al. Dimensioning a full color LED microdisplay for augmented reality headset in a very bright environment. J Soc Inf Disp. 2021; 29(1): 3–16. https://doi.org/10.1002/jsid.884
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+23El Badaoui S, Le Maitre P, Cibie A, Rol F, Litschgi S, Simon J, et al. Impact of GaN μLEDs aspect ratio on bandwidth and efficiency. In: 2023 photonics north (PN); 2023. p. 1–2.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+24Le Maitre P, El Badaoui S, Cibié A, Simon J, Rol F, Miralles B, et al. GaN μLED on 200mm silicon wafer toward efficient chip to chip communication. Solar Energy Light-Emitting Dev. 2023;SW2D--3.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+25Karpov S. ABC-model for interpretation of internal quantum efficiency and its droop in III-nitride LEDs: a review. Optical Quantum Electron. 2015; 47(6): 1293–1303. https://doi.org/10.1007/s11082-014-0042-9
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+26Riaziat UL, Editor A, Stokes LF. Coupling light from incoherent sources to optical waveguides. IEEE Circ Dev Mag. 1994; 10(1): 46–47. https://doi.org/10.1109/101.313414
+View
+Google Scholar
+Samsung Display Co. Ltd.
+27Mcmahon DH. Efficiency limitations imposed by thermodynamics on optical coupling in fiber-optic data links. J Opt Soc am. 1975; 65(12):1479. https://doi.org/10.1364/JOSA.65.001479
+View
+Google Scholar
+Samsung Display Co. Ltd.
+28West GN, Loh W, Kharas D, Sorace-Agaskar C, Mehta KK, Sage J, et al. Low-loss integrated photonics for the blue and ultraviolet regime. APL Photon. 2019; 4(2):026101. https://doi.org/10.1063/1.5052502
+View
+Google Scholar
+Samsung Display Co. Ltd.
+29Wang Y, Zhu G, Cai W, Gao X, Yang Y, Yuan J, et al. On-chip photonic system using suspended p-n junction InGaN/GaN multiple quantum wells device and multiple waveguides. Appl Phys Lett. 2016; 108(16). https://doi.org/10.1063/1.4947280
+View
+Google Scholar
+Samsung Display Co. Ltd.
+30Ansys LI. FDTD: 3D electromagnetic simulator.
+Google Scholar
+Samsung Display Co. Ltd.
+31Kang CH, Liu G, Lee C, Alkhazragi O, Wagstaff JM, Li KH, et al. Semipolar (2021) InGaN/GaN micro-photodetector for gigabit-per-second visible light communication. Appl Phys Express. 2020 Jan; 1(1): 13. https://doi.org/10.7567/1882-0786/ab58eb
+View
+Google Scholar
+Samsung Display Co. Ltd.
+32Zheng R, Taguchi T. Stokes shift in InGaN epitaxial layers. Appl Phys Lett. 2000; 77(19): 3024–3026. https://doi.org/10.1063/1.1323543
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+33Birner S, Zibold T, Andlauer T, Kubis T, Sabathil M, Trellakis A, et al. Nextnano: general purpose 3-D simulations. IEEE Trans Electron Dev. 2007; 54(9): 2137–2142. https://doi.org/10.1109/TED.2007.902871
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+34 Silvaco International, Santa Clara, CA. 2022. Atlas user manual, device simulation software, June 01, 2022, 2022.
+Google Scholar
+Samsung Display Co. Ltd.",1,1,characterization  communication FDTD  GaN  microLED  microPD  TCAD  VLC Short range optical communication with GaN-on-Si microLED and microPD matrices,v.0.1
+5,file05.txt,https://doi.org/10.1002/jsid.2013,20241201,High-speed and contactless inspection of defective micro-LEDs through the photovoltaic effect,"detection, EPIS, inspection, micro-LED, photovoltaic effect, proximity capacitance imagesensor","Abstract
+The most significant challenge associated with micro-light-emitting-diode (micro-LED) displays, which are anticipated to be the next generation of display technology, is the high manufacturing cost. In order to reduce manufacturing costs, it is essential to improve yield. Improving the manufacturing yield of them necessitates the evaluation of micro-LED chips prior to their installation onto substrates. However, the microsize and large quantity of these chips renders inspection difficult with conventional inspection methods. Herein, we propose a method for inspecting micro-LED chips by measuring the voltage generated between the anode and cathode due to the photovoltaic effect using a developed proximity capacitance image sensor. As this inspection method does not require the use of probe pins to contact LED electrodes, it enables simultaneous inspection of multiple chips in a short time without causing any damage to the electrodes. In this paper, an experimental system equipped with this sensor was developed to demonstrate the basic measurement principle. Moreover, we demonstrated that more than 50,000 micro-LED chips with a size of 60 μm × 34 μm can be simultaneously inspected in approximately 2 s.",32,12,11,23,"Toshiro Yasuda, Shigetoshi Sugawa, Yayoi Yokomichi, Kazuhisa Kobayashi, Hiroshi Hamori, Akinobu Teramoto","1Chen H-W, Lee J-H, Lin B-Y, Chen S, Wu S-T. Liquid crystal display and organic light-emitting diode display: present status and future perspectives. Light: Sci Appl. 2018; 7(3):17168.
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+2Schadt M. Milestone in the history of field-effect liquid crystal displays and materials. Jpn J Appl Phys. 2009; 48(3S2):03B001.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+3Lueder E, Knoll P, Lee S-H. Liquid crystal displays: addressing schemes and electro-optical effects John Wiley & Sons; 2022.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+4Tang CW, VanSlyke SA. Organic electroluminescent diodes. Appl Phys Lett. 1987; 51(12): 913–5. https://doi.org/10.1063/1.98799
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Hong G, Gan X, Leonhardt C, Zhang Z, Seibert J, Busch JM, et al. A brief history of OLEDs-emitter development and industry milestones. Adv Mater. 2021; 33(9):e2005630. https://doi.org/10.1002/adma.202005630
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+6Jiang HX, Jin SX, Li J, Shakya J, Lin JY. III-nitride blue microdisplays. Appl Phys Lett. 2001; 78(9): 1303–5. https://doi.org/10.1063/1.1351521
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+7Huang Y, Hsiang EL, Deng MY, Wu ST. Mini-LED, micro-LED and OLED displays: present status and future perspectives. Light: Sci Appl. 2020; 9(1):105.
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8Hsiang E-L, Yang Z, Yang Q, Lan Y-F, Wu S-T. Prospects and challenges of mini-LED, OLED, and micro-LED displays. J Soc Inf Disp. 2021; 29(6): 446–65. https://doi.org/10.1002/jsid.1058
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+9Zhang S, Zheng H, Zhou L, Li H, Chen Y, Wei C, et al. Research progress of micro-LED display technology. Crystals. 2023; 13(7):1001. https://doi.org/10.3390/cryst13071001
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+10Hsiang EL, Yang Z, Yang Q, Lai PC, Lin CL, Wu ST. AR/VR light engines: perspectives and challenges. Adv Opt Photon. 2022; 14(4): 783–861. https://doi.org/10.1364/AOP.468066
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+11Xiong J, Hsiang EL, He Z, Zhan T, Wu ST. Augmented reality and virtual reality displays: emerging technologies and future perspectives. Light: Sci Appl. 2021; 10(1): 216. https://doi.org/10.1038/s41377-021-00658-8
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+12Li Y, Tao J, Zhao Y, Wang J, Lv J, Qin Y, et al. 48 × 48 pixelated addressable full-color micro display based on flip-chip micro LEDs. Appl Optics. 2019; 58(31): 8383–9. https://doi.org/10.1364/AO.58.008383
+View
+CAS
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+13Shih F, Tsou C, Fang W. A monolithic micromachined thermocouple probe with electroplating nickel for micro-LED inspection. J Microelectromech Syst. 2021; 30(6): 864–75. https://doi.org/10.1109/JMEMS.2021.3112769
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+14Otto I, Mounir C, Nirschl A, Pfeuffer A, Schäpers T, Schwarz U-T, et al. Micro-pixel light emitting diodes: impact of the chip process on microscopic electro-and photoluminescence. Appl Phys Lett. 2015; 106(15):151108. https://doi.org/10.1063/1.4918678
+View
+Google Scholar
+Samsung Display Co. Ltd.
+15Kim K, Jung G, Kim J, Sung Y, Kang J, Lee W-J, et al. Correlation between photoluminescence and electroluminescence in GaN-related micro light emitting diodes: effects of leakage current, applied bias, incident light absorption and carrier escape. Opt Mater. 2021; 120:111448. https://doi.org/10.1016/j.optmat.2021.111448
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+16Ebayyeh M, Mousavi A. A review and analysis of automatic optical inspection and quality monitoring methods in electronics industry. IEEE Access. 2020; 8: 183192–271. https://doi.org/10.1109/ACCESS.2020.3029127
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+17Yamamoto M, Kuroda R, Suzuki M, Goto T, Hamori H, Murakami S, et al. A CMOS proximity capacitance image sensor with 16 μm pixel pitch, 0.1 aF detection accuracy and 60 frames per second. IEEE International Electron Devices Meeting (IEDM) 2018;29
+Google Scholar
+Samsung Display Co. Ltd.
+18Kuroda R, Yamamoto M, Sugama Y, Watanabe Y, Suzuki M, Goto T, et al. High accuracy high spatial resolution and real-time CMOS proximity capacitance image sensor technology and its applications. ITE Trans Media Technol Appl. 2021; 9(2): 122–7. https://doi.org/10.3169/mta.9.122
+View
+Google Scholar
+Samsung Display Co. Ltd.
+19Yasuda T, Sugawa S, Kuroda R, Yokomichi Y, Kobayashi K, Hamori H, et al. High-resolution defect detection for flat panel display using proximity capacitance image sensor. ITE Trans MediaTechnol Appl. 2023; 11(4): 158–63. https://doi.org/10.3169/mta.11.158
+View
+Google Scholar
+Samsung Display Co. Ltd.
+20Sugama Y, Watanabe Y, Kuroda R, Yamamoto M, Goto T, Yasuda T, et al. Two high-precision proximity capacitance CMOS image sensors with large format and high resolution. Sensors. 2022; 22(7):2770. https://doi.org/10.3390/s22072770
+View
+Google Scholar
+Samsung Display Co. Ltd.
+21Fuyuki T, Kondo H, Yamazaki T, Takahashi Y, Uraoka Y. Photographic surveying of minority carrier diffusion length in polycrystalline silicon solar cells by electroluminescence. Appl Phys Lett. 2005; 86(26):262108. https://doi.org/10.1063/1.1978979
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+22Wang Y, Li L, Sun Y, Xu J, Jia Y, Hong J, et al. Adaptive automatic solar cell defect detection and classification based on absolute electroluminescence imaging. Energy. 2021; 229:120606. https://doi.org/10.1016/j.energy.2021.120606
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+23Hervé P, Vandamme LKJ. General relation between refractive index and energy gap in semiconductors. Infrared Phys Technol. 1994; 35(4): 609–15. https://doi.org/10.1016/1350-4495(94)90026-4
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.",1,1,detection  EPIS  inspection  micro-LED  photovoltaic effect  proximity capacitance imagesensor High-speed and contactless inspection of defective micro-LEDs through the photovoltaic effect,v.0.1
+6,file06.txt,https://doi.org/10.1002/jsid.1344,20241001,Wide-viewing-angle dual-view integral imaging display,"dual-view, integral imaging, viewing angle","Abstract
+A wide-viewing-angle dual-view integral imaging display is proposed. A micro-lens array, a polarizer parallax barrier, and a display panel are aligned in sequence. The display panel is covered with the polarizer parallax barrier. Two types of orthogonal polarizer slits in the polarizer parallax barrier are alternately aligned. Two types of orthogonal polarizer slits polarize the lights from two types of elemental images. The micro-lens array propagates two types of polarized lights into two primary viewing zones, which coincide at the optimal viewing distance. Different 3D images are, respectively, observed through two types of polarizer glasses. The viewing angle is enhanced and unrelated to the number of elemental images.",32,10,6,20,"Bai-Chuan Zhao, Wei Jia, Wei Fan, Fan Yang, Yang Fu","1Lv ZL, Li JN, Yang Y, Liu J. 3D head-up display with a multiple extended depth of field based on integral imaging and holographic optical elements. Opt Express. 2023; 31(2): 964–975. https://doi.org/10.1364/OE.477479
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+2Wang D, Liu C, Shen C, Xing Y, Wang QH. Holographic capture and projection system of real object based on tunable zoom lens. PhotoniX. 2020; 1(1):6. https://doi.org/10.1186/s43074-020-0004-3
+View
+Google Scholar
+Samsung Display Co. Ltd.
+3Liu SJ, Wang D, Wang QH. Speckle noise suppression method in holographic display using time multiplexing technique. Opt Commun. 2019; 436: 253–257. https://doi.org/10.1016/j.optcom.2018.12.038
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+4Lv GJ, Wang QH, Zhao WX, Wu F. Special subpixel arrangement-based 3D display with high horizontal resolution. Appl Optics. 2014; 53(31): 7337–7340. https://doi.org/10.1364/AO.53.007337
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Kim Y, Park S, Baek H, Min SW. Voxel characteristic estimation of integral imaging display system using self-interference incoherent digital holography. Opt Express. 2022; 30(2): 902–913. https://doi.org/10.1364/OE.444925
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+6Luo CG, Xiao X, Martínez-Corral M, Chen CW, Javidi B, Wang QH. Analysis of the depth of field of integral imaging displays based on wave optics. Opt Express. 2013; 21(25): 31263–31273. https://doi.org/10.1364/OE.21.031263
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+7Wu F, Deng H, Luo CG, Li DH, Wang QH. High optical-efficiency integral imaging display with a gradient-aperture parallax barrier. Chin Opt Lett. 2013; 11(7):071101. https://doi.org/10.3788/COL201311.071101
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8Choi HM, Hwang YS, Kim ES. Field-of-view enhanced integral imaging with dual prism arrays based on perspective-dependent pixel mapping. Opt Express. 2022; 30(7): 11046–11065. https://doi.org/10.1364/OE.450698
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+9Hsieh CT, Shu JN, Chen HT, Huang CY, Tian CJ, Lin CH. Dual-view liquid crystal display fabricated by patterned electrodes. Opt Express. 2012; 20(8): 8641–8648. https://doi.org/10.1364/OE.20.008641
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+10Joshi R, O'Connor T, Shen X, Wardlaw M, Javidi B. Optical 4D signal detection in turbid water by multi-dimensional integral imaging using spatially distributed and temporally encoded multiple light sources. Opt Express. 2020; 28(7): 10477–10490. https://doi.org/10.1364/OE.389704
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+11Shateri F, Behzadfar S, Kavehvash Z. Improved depth resolution and depth-of-field in temporal integral imaging systems through non-uniform and curved time-lens array. Opt Express. 2020; 28(7): 6261–6276. https://doi.org/10.1364/OE.382439
+View
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+12Lv GJ, Zhao BC, He RX, Zheng L, Wu F. A 3D display with switchable optimal view distances. Opt Commun. 2021; 481:126559. https://doi.org/10.1016/j.optcom.2020.126559
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+13Deng H, Wang QH, Wu F, Luo CG, Liu Y. Cross-talk-free integral imaging three-dimensional display based on a pyramid pinhole array. Photon Res. 2015; 3(4): 173–176. https://doi.org/10.1364/PRJ.3.000173
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+14Wu F, Deng H, Luo CG, Li DH, Wang QH. Dual-view integral imaging three-dimensional display. Appl Optics. 2013; 52(20): 4911–4914. https://doi.org/10.1364/AO.52.004911
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+15Xing Y, Wang QH, Luo L, Ren H, Deng H. High-performance dual-view 3D display system based on integral imaging. IEEE Photon J. 2019; 11(1): 1–12. https://doi.org/10.1109/JPHOT.2019.2895863
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+16Jeong J, Lee CK, Hong K, Yeom J, Lee B. Projection-type dual-view three-dimensional display system based on integral imaging. Appl Optics. 2014; 53(27): G12–G18. https://doi.org/10.1364/AO.53.000G12
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+17Wu F, Wang QH, Luo CG, Li DH, Deng H. Dual-view integral imaging 3D display using polarizer parallax barriers. Appl Optics. 2014; 53(10): 2037–2039. https://doi.org/10.1364/AO.53.002037
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+18Wu F, Zhao BC, Liu ZS, Lv GJ. Dual-view integral imaging display using a polarizer. Appl Optics. 2020; 59(19): 5785–5787. https://doi.org/10.1364/AO.394532
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+19Wang QH, Ji CC, Li L, Deng H. Dual-view integral imaging 3D display by using orthogonal polarizer array and polarization switcher. Opt Express. 2016; 24(1): 9–16. https://doi.org/10.1364/OE.24.000009
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+20Wu F, Lv GJ, Deng H, Zhao BC, Wang QH. Dual-view integral imaging three-dimensional display using polarized glasses. Appl Optics. 2018; 57(6): 1447–1449. https://doi.org/10.1364/AO.57.001447
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.",1,1,dual-view  integral imaging  viewing angle Wide-viewing-angle dual-view integral imaging display,v.0.1
+7,file07.txt,https://doi.org/10.1002/jsid.1346,20241001,Scene-content-sensitive real-time adaptive foveated rendering,"foveated rendering, variable rate shading, visual perception","Abstract
+In recent years, techniques for accelerating rendering by exploiting the limitations of the human visual system have become increasingly prevalent. The foveated rendering method significantly reduces the computational requirements during rendering by reducing image quality in peripheral regions. In this paper, we propose a scene-content-sensitive real-time adaptive foveated rendering method. First, we pre-render the three-dimensional (3D) scene at a low resolution. Then, we utilize the low-resolution pre-rendered image as input to extract edge, local contrast, and color features. Subsequently, we generate a screen-space region division map based on the gaze point position. Next, we calculate the visual importance of each 16 × 16 pixel tile based on edge, local contrast, color, and screen-space region. We then map the visual importance to the shading rate to generate a shading rate control map for the current frame. Finally, we complete the rendering of the current frame based on variable rate shading technology. Experimental results demonstrate that our method effectively enhances the visual quality of images near the foveal region while generating high quality foveal region images. Furthermore, our method can significantly improve performance compared to per-pixel shading method and existing scene-content-based foveated rendering methods.",32,10,13,27,"Chuanyu Shen, Chunyi Chen, Xiaojuan Hu","1Tursun OT, Arabadzhiyska-Koleva E, Wernikowski M, Mantiuk R, Seidel H, Myszkowski K, et al. Luminance-contrast-aware foveated rendering. ACM Trans Graph. 2019; 38(98): 1–14. https://doi.org/10.1145/3306346.3322985
+View
+Google Scholar
+Samsung Display Co. Ltd.
+2Weier M, Stengel M, Roth T, Didyk P, Eisemann E, Eisemann M, et al. Perception-driven accelerated rendering. CGF. 2017; 36(2): 611–643. https://doi.org/10.1111/cgf.13150
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+3Andersen SR. The history of the Ophthalmological Society of Copenhagen 1900-50. Acta Ophthalmol Scand. 2002; 80(s234): 6–17. https://doi.org/10.1034/j.1600-0420.80.s234.2.x
+View
+Google Scholar
+Samsung Display Co. Ltd.
+4Weymouth FW. Visual sensory units and the minimal angle of resolution. Am J Ophthalmol. 1958; 46(1): 102–113. https://doi.org/10.1016/0002-9394(58)90042-4
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Levi DM, Klein SA, Aitsebaomo AP. Vernier acuity, crowding and cortical magnification. Vis Res. 1985; 25(7): 963–977. https://doi.org/10.1016/0042-6989(85)90207-X
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+6Geisler WS, Perry JS. Real-time foveated multiresolution system for low-bandwidth video communication. Human Vision and Electronic Imaging III. 1998; 3299: 294–305.
+Google Scholar
+Samsung Display Co. Ltd.
+7Wang L, Shi X, Liu Y. Foveated rendering: a state-of-the-art survey. Comput Vis Media. 2023; 9(2): 195–228. https://doi.org/10.1007/s41095-022-0306-4
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8Guenter B, Finch M, Drucker S, Tan D, Snyder J. Foveated 3D graphics. ACM Trans Graph. 2012; 31(6): 1–10. https://doi.org/10.1145/2366145.2366183
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+9Stengel M, Grogorick S, Eisemann M, Magnor M. Adaptive image-space sampling for gaze-contingent real-time rendering. CGF. 2016; 35(4): 129–139. https://doi.org/10.1111/cgf.12956
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+10Meng X, Du R, Zwicker M, Varshney A. Kernel foveated rendering. Proc ACM Comput Graph Interact Tech. 2018; 1(1): 1–20. https://doi.org/10.1145/3203199
+View
+Google Scholar
+Samsung Display Co. Ltd.
+11Franke L, Fink L, Martschinke J, Selgrad K, Stamminger M. Time-warped foveated rendering for virtual reality headsets. CGF. 2021; 40(1): 110–123. https://doi.org/10.1111/cgf.14176
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+12Meng X, Du R, Varshney A. Eye-dominance-guided foveated rendering. IEEE Trans Vis Comput Graph. 2020; 26(5): 1972–1980. https://doi.org/10.1109/TVCG.2020.2973442
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+13Ye J, Xie A, Jabbireddy S, Li Y, Yang X, Meng X. Rectangular mapping-based foveated rendering. 2022 IEEE Conference on Virtual Reality and 3D User Interfaces (VR), pp. 756-764, 2022.
+Google Scholar
+Samsung Display Co. Ltd.
+14Shi X, Wang L, Wu J, Ke W, Lam CT. Locomotion-aware foveated rendering. 2023 IEEE Conference Virtual Reality and 3D User Interfaces (VR). pp. 471-481, 2023.
+Google Scholar
+Samsung Display Co. Ltd.
+15Bhonde S. Turing variable rate shading in VRWorks. 2018. Available from: https://developer.nvidia.com/blog/turing-variable-rate-shading-vrworks
+Google Scholar
+Samsung Display Co. Ltd.
+16Harding S. What is variable rate shading? A basic definition of Nvidia VRS. 2021. Available from: https://www.tomshardware.com/reviews/variable-rate-shading-vrs-definition-nvidia-graphics,6342.html
+Google Scholar
+Samsung Display Co. Ltd.
+17Burnes A. Shadow warrior 2 available now, includes NVIDIA Multi-Res shading for 30% faster performance. 2016. Available from: https://www.nvidia.com/en-us/geforce/news/shadow-warrior-2-nvidia-multi-res-shading
+Google Scholar
+Samsung Display Co. Ltd.
+18Liu E. Lens matched shading and unreal engine 4 integration part 1. 2017. Available from: https://developer.nvidia.com/lens-matched-shading-and-unreal-engine-4-integration-part-1
+Google Scholar
+Samsung Display Co. Ltd.
+19Yang L, Zhdan D, Kilgariff E, Lum EB, Zhang Y, Johnson M, et al. Visually lossless content and motion adaptive shading in games. Proc ACM Comput Graph Interact Tech. 2019; 2(1): 1–19. https://doi.org/10.1145/3320287
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+20Jindal A, Wolski K, Myszkowski K, Mantiuk RK. Perceptual model for adaptive local shading and refresh rate. ACM Trans Graph. 2021; 40(6): 1–18. https://doi.org/10.1145/3478513.3480514
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+21Vangorp P, Laurijssen J, Dutré P. The influence of shape on the perception of material reflectance. Proceedings of the ACMSIGGRAPH, 2007, pp. 77-es, 2007.
+Google Scholar
+Samsung Display Co. Ltd.
+22Marlow PJ, Anderson BL. Material properties derived from three-dimensional shape representations. Vis Res. 2015; 115, no. B: 199–208. https://doi.org/10.1016/j.visres.2015.05.003
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+23Mathur N, Mathur S, Mathur D. A novel approach to improve sobel edge detector. Procedia Comput Sci. 2016; 93: 431–438. https://doi.org/10.1016/j.procs.2016.07.230
+View
+Google Scholar
+Samsung Display Co. Ltd.
+24Peli E. Contrast in complex images. J Opt Soc Am A. 1990; 7(10): 2032–2040. https://doi.org/10.1364/JOSAA.7.002032
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+25Frazor RA, Geisle WS. Local luminance and contrast in natural images. Vis Res. 2006; 46(10): 1585–1598. https://doi.org/10.1016/j.visres.2005.06.038
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+26Gao S, Jin W, Wang Y, Zhang X. Target-background perceptual contrast metric for gray fusion images. Infrared Laser Eng. 2015; 44(5): 1660–1665.
+Google Scholar
+Samsung Display Co. Ltd.
+27Andersson P, Nilsson J, Akenine-Möller T, Oskarsson M, Åström K, Fairchild MD. FLIP: a difference evaluator for alternating images. Proc ACM Comput Graph Interact Tech. 2020; 3(2): 1–23. https://doi.org/10.1145/3406183
+View
+Google Scholar
+Samsung Display Co. Ltd.",1,1,foveated rendering  variable rate shading  visual perception Scene-content-sensitive real-time adaptive foveated rendering,v.0.1
+8,file08.txt,https://doi.org/10.1002/jsid.2002,20241001,A new gate driver employing linearly sweep signal generated module for high-resolution micro-LED display with line-by-line pulse width modulation driving method,"analog PWM driving, gate driver, line-by-line driving method, metal oxide (MO), micro-light-emitting diode (micro-LED), thin-film transistor (TFT)","Abstract
+A new gate driver with metal oxide thin-film transistors (MO-TFTs) has been presented for micro-light-emitting diode (Micro-LED) display. The proposed gate driver employing linearly decreasing sweep signal generated module could realize the line-by-line pulse width modulation (PWM) driving method, which is valuable for application in high-resolution Micro-LED display compared with the conventional driving method employing global sweep signal. A simple Micro-LED pixel circuit including an inverter module driven by the analog PWM method is employed to demonstrate the feasibility of the proposed gate driver. A 10 × 10 green Micro-LED display array has been fabricated with MO-TFTs backplane technology. It is shown that a 10-μs width pulse and linearly scanning sweep signal can be successfully output. Consequently, the pixel circuit array can be driven properly under analog line-by-line PWM driving method.",32,10,10,21,"Li-Rong Zhang, Xiang-Lin Mei, Zhao-Hua Zhou, Lei Zhou, Chun Liu, Miao Xu, Lei Wang, Wei-Jing Wu, Jun-Biao Peng","1Yu J, Xu F, Tao T, Liu B, Wang B, Sang Y, et al. Gallium nitride blue/green micro-LEDs for high brightness and transparency display. IEEE Electron Device Lett. 2023; 44(2): 281–284. https://doi.org/10.1109/LED.2022.3228529
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+2Lee SL, Cheng CC, Liu CJ, Yeh CN, Lin YC. 9.4-inch 228-ppi flexible micro-LED display. J Soc Inf Disp. 2021; 29(5): 360–369. https://doi.org/10.1002/jsid.1022
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+3Herrnsdorf J, McKendry JJD, Shuailong Zhang, Enyuan Xie, Ferreira R, Massoubre D, et al. Active-matrix GaN micro light-emitting diode display with unprecedented brightness. IEEE Trans Electron Devices. 2015; 62(6): 1918–1925. https://doi.org/10.1109/TED.2015.2416915
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+4Yang J, Park HW, Kim B, Cho Y-H, Park S-HK. Active-matrix micro-light-emitting diode displays driven by monolithically integrated dual-gate oxide thin-film transistors. J Mater Chem C. 2022; 10(26): 9699–9706. https://doi.org/10.1039/D2TC01905A
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Kim JH, Shin S, Kang K, Jung C, Jung Y, Shigeta T, et al. 15-1: PWM pixel circuit with LTPS-TFTs for micro-led displays. SID Symp Dig. 2019; 50(1): 192–195. https://doi.org/10.1002/sdtp.12887
+View
+Google Scholar
+Samsung Display Co. Ltd.
+6Hong Y-H, Jung EK, Hong S, Kim Y-S. 61-2: a novel micro-LED pixel circuit using n-type LTPS TFT with pulse width modulation driving. Symp Digest Tech Papers. 2021; 52(1): 868–871. https://doi.org/10.1002/sdtp.14822
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+7Kang K-S, Park JH, Kang J, Park C, Jeong C, Lee SY. A compact amorphous In-Ga-Zn-oxide thin film transistor pixel circuit with two capacitors for active matrix micro light-emitting diode displays. IEEE J Electron Devices Soc. 2023; 11: 204–209. https://doi.org/10.1109/JEDS.2023.3261275
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+8Chen P, Wang K, Chen J, Xu H, Zhang Y, Wu C, et al. Achieving wide operating voltage windows in non-carrier injection micro-LEDs for enhancing luminance robustness. IEEE Trans Electron Devices. 2022; 69(1): 212–215. https://doi.org/10.1109/TED.2021.3131289
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+9Hong Y-H, Jung EK, Im H, Kim Y-S. Improvement of the low gray-level expression using hybrid pulse width modulation and pulse amplitude modulation driving method for a micro light-emitting diode pixel circuit. J Inf Disp. 2022; 23(4): 243–249. https://doi.org/10.1080/15980316.2022.2084464
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+10Tong C-D, Li GY, Zheng X, Chen CB, Ke ZJ, Wu RX, et al. Luminous properties of red, green, and blue micro-LEDs and the impacts on color gamut. IEEE Trans Electron Devices. 2023; 70(4): 1733–1738. https://doi.org/10.1109/TED.2023.3247362
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+11Lee P-YL, Li SH, Hung TY, Yang YW, Li SH, Sun JJ, et al. A 10-bit 1280 × 720 micro-LED display driver with 2-transistor pixel circuits and current-mode pulse width modulation. IEEE Solid-State Circ Lett. 2022; 5: 134–137. https://doi.org/10.1109/LSSC.2022.3174137
+View
+Google Scholar
+Samsung Display Co. Ltd.
+12Oh J, Kim JH, Lee J, Jung EK, Oh D, Min J, et al. Pixel circuit with P-type low-temperature polycrystalline silicon thin-film transistor for micro light-emitting diode displays using pulse width modulation. IEEE Electron Device Lett. 2021; 42(10): 1496–1499. https://doi.org/10.1109/LED.2021.3107152
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+13Zou P-A, Xu YG, Liu C, Zhang LR, Zhang JH, Yuan YK, et al. A new analog PWM pixel circuit with metal oxide TFTs for micro-LED displays. IEEE Trans Electron Devices. 2022; 69(8): 4306–4311. https://doi.org/10.1109/TED.2022.3178363
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+14Jen K-R, Chen Y-C, Chang Y-C, Fan Y-S, Huang C-S, Tang Y-H, et al. P-27: a novel PWM driving pixel circuit with metal-oxide TFTs for micro-LED displays. SID Symp Dig. 2022; 53(1): 1137–1140. https://doi.org/10.1002/sdtp.15702
+View
+Google Scholar
+Samsung Display Co. Ltd.
+15Lee P-YL, Yang Y-W, Li S-H, Sun J-J, Hung TY, Lu C-W, et al. A 1280 x 720 micro-LED display driver with 10-bit current-mode pulse width modulation. In: 2021 IEEE Asian Solid-State Circuits Conference (A-SSCC) IEEE; 2021. p. 1–3 DOI: 10.1109/A-SSCC53895.2021.9634720.
+Google Scholar
+Samsung Display Co. Ltd.
+16Lin Y-Z, Liu C, Zhang JH, Yuan YK, Cai W, Zhou L, et al. Active-matrix micro-LED display driven by metal oxide TFTs using digital PWM method. IEEE Trans Electron Devices. 2021; 68(11): 5656–5661. https://doi.org/10.1109/TED.2021.3112947
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+17Park C, Kang KS, Park JH, Lee SY. 7-4: a novel a-IGZO TFT micro-LED circuit with improved stability and area efficiency. SID Symp Dig. 2023; 54(1): 74–77. https://doi.org/10.1002/sdtp.16491
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+18Liu Y, Que S, Liao C, Fu J, Song Z, Lu L, et al. P-9: LTPO TFTs based PWM pixel circuit for AM-micro-LED display with falling-time< 10μs. SID Symp Dig. 2023; 54(1): 1810–1813. https://doi.org/10.1002/sdtp.16957
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+19Kim J, Lee H, Jeong M, Bae J, Park C, Jang J. Micro-LED pixel circuit using low-temperature poly-Si oxide TFTs with fast rise and fall times of pulse width modulation for low gray expression. IEEE Electron Device Lett. 2023; 44(9): 1448–1451. https://doi.org/10.1109/LED.2023.3299958
+View
+Google Scholar
+Samsung Display Co. Ltd.
+20Lin C-L, Ke CH, Chang JH, Lin CA, Wu CE, Lee MH. Analog PWM method with sweep generation structure based on P-type LTPS TFTs for micro-LED displays. IEEE J Electron Devices Soc. 2023; 11: 573–578. https://doi.org/10.1109/JEDS.2023.3324065
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+21Kang KS, Park JH, Park C, Lee SY. 7-3: a new line-by-line SWEEP signal generation method for PWM driving micro LED TFT pixel circuit. SID Symp Dig. 2023; 54(1): 70–73. https://doi.org/10.1002/sdtp.16490
+View
+Google Scholar
+Samsung Display Co. Ltd.",1,1,analog PWM driving  gate driver  line-by-line driving method  metal oxide (MO)  micro-light-emitting diode (micro-LED)  thin-film transistor (TFT) A new gate driver employing linearly sweep signal generated module for high-resolution micro-LED display with line-by-line pulse width modulation driving method,v.0.1
+9,file09.txt,https://doi.org/10.1002/jsid.2003,20241001,Subjective assessment of visual fidelity: Comparison of forced-choice methods,,"Abstract
+Increases in display resolution, frame rate, and bit depth, particularly with advances in stereoscopic 3D (S3D) displays, have increased demand for efficient compression throughout the imaging pipeline. To meet such requirements, typically the aim is to reduce bandwidth while presenting content that is visually indistinguishable from the original uncompressed versions. Subjective image quality assessment is essential and multiple methods have been proposed. Of these, the ISO/IEC 29170-2 flicker paradigm is a rigorous method used to define visually lossless performance. However, it is possible that the enhanced sensitivity to artifacts in the presence of flicker does not predict visibility under natural viewing conditions. Here, we test this prediction using high-dynamic range S3D images and video under flicker and non-flicker protocols. As hypothesized, sensitivity to artifacts was greater when using the flicker paradigm, but no differences were observed between the non-flicker paradigms. Results were modeled using the Pyramid of Visibility, which predicted artifact detection driven by moderately low spatial frequencies. Overall, our results confirm the flicker paradigm is a conservative estimate of visually lossless behavior; it is highly unlikely to miss artifacts that would be visible under normal viewing. Conversely, artifacts identified by the flicker protocol may not be problematic in practice.",32,10,15,53,"Domenic Au, Sanjida Sharmin Mohona, Laurie M. Wilcox, Robert S. Allison","1Cai Q, Song L, Li G, Ling N. Lossy and lossless intra coding performance evaluation: HEVC, H. 264/AVC, JPEG 2000 and JPEG LS. In: 2012 Asia-Pac Signal Inf Process Assoc Annu Summit Conf APSIPA ASC; 2012. p. 1–9.
+Google Scholar
+Samsung Display Co. Ltd.
+2 ST 2042–1:2012 - SMPTE standard - VC-2 video compression. ST 2042–1:2012; 2012.
+Google Scholar
+Samsung Display Co. Ltd.
+3Rao KR, Kim DN, Hwang JJ. Video coding standards: AVS China, H.264/MPEG-4 PART 10, HEVC, VP6, DIRAC and VC-1 (Signals and Communication Technology). In: Signals and communication technology. Springer; 2014. p. 125–148.
+Google Scholar
+Samsung Display Co. Ltd.
+4 VESA display compression-M (VDC-M) standard, v 1.2. San Jose; 2019.
+Google Scholar
+Samsung Display Co. Ltd.
+5Fonseca RN, Ramirez MA. Using SCIELAB for image and video quality evaluation. IEEE Int Symp Consum Electron. 2008; 2008: 1–4.
+Google Scholar
+Samsung Display Co. Ltd.
+6Horé A, Ziou D. Image Quality Metrics: PSNR vs. SSIM. In: 2010 20th Int Conf pattern Recognit; 2010. p. 2366–2369.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+7Mantiuk R, Kim KJ, Rempel AG, Heidrich W. HDR-VDP-2: a calibrated visual metric for visibility and quality predictions in all luminance conditions. ACM Trans Graph. 2011; 30(4): 1–13. https://doi.org/10.1145/2010324.1964935
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8Ye N, Pérez-Ortiz M, Mantiuk R. Visibility Metric for Visually Lossless Image Compression. In: 2019 Pict coding Symp PCS; 2019. p. 1–5.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+9Daly S. Visible differences predictor: an algorithm for the assessment of image fidelity. In: Proc SPIE 1666 hum Vis Vis process digit Disp III; 1992. p. 1666, 1–1615.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+10Le Callet P, Niebur E. Visual attention and applications in multimedia technologies. Proc IEEE Inst Electr Electron Eng. 2013; 101(9): 2058–2067. https://doi.org/10.1109/JPROC.2013.2265801
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+11Wang Z, Bovik AC, Lu L. Why is image quality assessment so difficult? In: 2002 IEEE Int Conf Acoust speech signal process 4; 2002. p. IV-3313–IV–3316.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+12Girod B. What's wrong with mean-squared error? Digit Images Hum Vis. 1993; 207–220.
+Google Scholar
+Samsung Display Co. Ltd.
+13He L, Gao F, Hou W, Hao L. Objective image quality assessment: a survey. Int J Comput Math. 2014; 91(11): 2374–2388. https://doi.org/10.1080/00207160.2013.816415
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+14Athar S, Wang Z. A comprehensive performance evaluation of image quality assessment algorithms. IEEE Access. 2019; 7: 140030–140070. https://doi.org/10.1109/ACCESS.2019.2943319
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+15Zhang E, Chen Y, Yu J, Yang Y. A Study of Image Color Quality Evaluation based on S-CIELAB. In: 2010 3rd Int Congr image signal process; 2010. p. 1110–1114.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+16Mantiuk R, Hammou D, Hanji P. HDR-VDP-3: a multi-metric for predicting image differences, quality and contrast distortions in high dynamic range and regular content. ArXiv Prepr ArXiv230413625. 2023; 1–6.
+Google Scholar
+Samsung Display Co. Ltd.
+17Testolina M, Upenik E, Sneyer J, Ebrahimi T. Towards JPEG AIC part 3: visual quality assessment of high to visually lossless image coding. In: Proc SPIE 12226 Appl digit image process XLV 122260D; 2022. p. 1–9.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+18 BT.500–14, I.-R. Methodologies for the subjective assessment of the quality of television images. 2019.
+Google Scholar
+Samsung Display Co. Ltd.
+19Ridder H. Psychophysical evaluation of image quality: from judgment to impression. In: ISTSPIE Conf hum Vis electron imaging III 3299; 1998. p. 252–263.
+Google Scholar
+Samsung Display Co. Ltd.
+20Gescheider GA. Psychophysics the fundamentals. New York: Psychology Press; 1997.
+Google Scholar
+Samsung Display Co. Ltd.
+21 ISO/IEC 29170-2 - information technology - advanced image coding and evaluation - part 2: evaluation procedure for nearly lossless coding. 2015.
+Google Scholar
+Samsung Display Co. Ltd.
+22Hoffman DM, Stolitzka D. A new standard method of subjective assessment of barely visible image artifacts and a new public database. J Soc Inf Disp. 2015; 22(12): 631–643.
+View
+updates
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+23Landis C. Determinants of the critical flicker-fusion threshold. Physiol Rev. 1954; 34(2): 259–286. https://doi.org/10.1152/physrev.1954.34.2.259
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+24Hartmann E, Lachenmayr B, Brettel H. The peripheral critical flicker frequency. Vision Res. 1979; 19(9): 1019–1023. https://doi.org/10.1016/0042-6989(79)90227-X
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+25 Information technology - advanced image coding and evaluation - part 2: evaluation procedure for nearly lossless coding amendment 1: evaluation procedure parameters for nearly lossless coding of high dynamic range media and image sequences. 2020.
+Google Scholar
+Samsung Display Co. Ltd.
+26Stolitzka D, Schelkens P, Bruylants T. New procedures to evaluate visually lossless compression for display systems. In: Proc SPIE 10396 Appl digit image process XL 10396; 2017. p. 1–11.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+27Allison RS, Wilcox LM, Wang W, Hoffman DM, Hou Y, Goel J, et al. 75-2: invited paper: large scale subjective evaluation of display stream compression. SID Symp Dig Tech Pap. 2017; 48(1): 1101–1104. https://doi.org/10.1002/sdtp.11838
+View
+Google Scholar
+Samsung Display Co. Ltd.
+28Choi LK, Cormack LK, Bovik AC. Motion silencing of flicker distortions on naturalistic videos. Signal Process Image Commun. 2015; 39(Part B): 328–341. https://doi.org/10.1016/j.image.2015.03.006
+View
+Google Scholar
+Samsung Display Co. Ltd.
+29Choi LK, Bovik AC, Cormack LK. Spatiotemporal flicker detector model of motion silencing. Perception. 2014; 43(12): 1286–1302. https://doi.org/10.1068/p7772
+View
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+30Suchow JW, Alvarez GA. Motion silences awareness of visual change. Curr Biol. 2011; 21(2): 140–143. https://doi.org/10.1016/j.cub.2010.12.019
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+31Brunnström K, Allison RS, Chandler D, Colett H, Corriveau P, Daly S, et al. Industry and business perspectives on the distinctions between visually lossless and lossy video quality: Mobile and large format displays. Hum Vis electron. Imaging 2017. 2017; HVEI-131(14): 118–133. https://doi.org/10.2352/ISSN.2470-1173.2017.14.HVEI-131
+View
+Google Scholar
+Samsung Display Co. Ltd.
+32Thirumalai V, Ribera J, Xiang J, Zhang J, Azimi M, Kamali J, et al. P-23: a subjective method for evaluating Foveated image quality in HMDs. SID Symp Dig Tech Pap. 2020; 51(1): 1415–1418. https://doi.org/10.1002/sdtp.14152
+View
+Google Scholar
+Samsung Display Co. Ltd.
+33Willème A, Mahmoudpour S, Viola I, Fliegel K, Pospíšil J, Ebrahimi T, et al. Overview of the JPEG XS core coding system subjective evaluations. Appl Digit Image Process XLI. PMID: 107521M-1-107521M – 12.
+Google Scholar
+Samsung Display Co. Ltd.
+34Walls F, MacInnis A. 27.4L: late-news paper: VESA display stream compression: an overview. SID Symp Dig Tech Pap. 2014; 45(1): 360–363. https://doi.org/10.1002/j.2168-0159.2014.tb00097.x
+View
+Google Scholar
+Samsung Display Co. Ltd.
+35Sudhama A, Cutone MD, Hou Y, Goel J, Stolitzka D, Jacobson N, et al. 85-1: visually lossless compression of high dynamic range images: a large-scale evaluation. SID Symp Dig Tech Pap. 2018; 49(1): 1151–1154. https://doi.org/10.1002/sdtp.12106
+View
+Google Scholar
+Samsung Display Co. Ltd.
+36Au D, Mohona SS, Cutone MD, James G, Jacobson N, Allison RS, et al. 3-4: stereoscopic image quality assessment. SID Symp Dig Tech Pap. 2019; 50(1): 13–16. https://doi.org/10.1002/sdtp.12843
+View
+Google Scholar
+Samsung Display Co. Ltd.
+37Mohona SS, Au D, Kio OG, Robinson R, Hou Y, Wilcox LM, et al. Subjective Assessment of Stereoscopic Image Quality: The Impact of Visually Lossless Compression. In: 2020 twelfth Int Conf Qual multimed Exp QoMEX 2020. p. 1–6.
+Google Scholar
+Samsung Display Co. Ltd.
+38Mohona SS, Wilcox LM, Allison RS. Subjective assessment of display stream compression for stereoscopic imagery. J Soc Inf Disp. 2021; 29(8): 591–607. https://doi.org/10.1002/jsid.1002
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+39Testolina M, Lazzarotto D, Rodrigues R, Mohammadi S, Ascenso J, Pinheiro AMG, et al. On the Performance of Subjective Visual Quality Assessment Protocols for Nearly Visually Lossless Image Compression. In: Proc 31st ACM Int Conf multimed; 2023. p. 6715–6723.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+40Zhang X, Wandell B. A spatial extension of CIELAB for digital color-image reproduction. J Soc Inf Disp. 1997; 5(1): 61–63. https://doi.org/10.1889/1.1985127
+View
+Google Scholar
+Samsung Display Co. Ltd.
+41Mohona SS, Au D, Allison RS, Wilcox LM. The Subjective Quality of Stereoscopic 3D Video Following Display Stream Compression. In: 2023 IEEE 25th Int workshop multimed signal process MMSP; 2023. p. 1–6.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+42Cutone MD, Dalecki M, Goel J, Wilcox LM, Allison RS. P-31: a statistical paradigm for assessment of subjective image quality results. SID Symp Dig Tech Pap. 2018; 49(1): 1312–1314. https://doi.org/10.1002/sdtp.12154
+View
+Google Scholar
+Samsung Display Co. Ltd.
+43Bates D, Mächler M, Bolker B, Walker S. Fitting linear mixed-effects models using lme4. J Stat Softw. 2015; 67(1): 1–48. https://doi.org/10.18637/jss.v067.i01
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+44Watson AB, Ahumada A. The pyramid of visibility. Soc Imaging Sci Technol. 2016; 102: 1–6.
+Google Scholar
+Samsung Display Co. Ltd.
+45De Lange H. Research into the dynamic nature of the human fovea→cortex systems with intermittent and modulated light. I. Attenuation characteristics with white and colored light. J Opt Soc Am. 1958; 48(11): 777–784. https://doi.org/10.1364/JOSA.48.000777
+View
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+46Van Nes F, Bouman M. Spatial modulation transfer in the human eye. J Opt Soc Am. 1967; 57(3): 401–406. https://doi.org/10.1364/JOSA.57.000401
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+47Robson J. Spatial and temporal contrast-sensitivity functions of the visual system. J Opt Soc Am. 1966; 56: 1141–1142.
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+48Poynton C. Luminance, brightness, and lightness metrics for HDR. Soc Imaging Sci Technol. 2022; 30(1): 24–29. https://doi.org/10.2352/CIC.2022.30.1.06
+View
+Google Scholar
+Samsung Display Co. Ltd.
+49Watson AB, Yellott JI. A unified formula for light-adapted pupil size. J Vis. 2012; 12: 1–16.
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+50Sachs M, Nachmias J, Robson J. Spatial-frequency channels in human vision. J Opt Soc Am. 1971; 61(9): 1176–1186. https://doi.org/10.1364/JOSA.61.001176
+View
+CAS
+PubMed
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+51Barten P. Contrast sensitivity of the human eye and its effects on image quality. SPIE Press; 1999.
+View
+Google Scholar
+Samsung Display Co. Ltd.
+52Baseler H, Brewer A, Sharpe L, Morland A, Jägle H, Wandell B. Reorganization of human cortical maps caused by inherited photoreceptor abnormalities. Nat Neurosci. 5: 364–370.
+View
+PubMed
+Google Scholar
+Samsung Display Co. Ltd.
+53Daly S. Engineering observations from spatiovelocity and spatiotemporal visual models. In: Vision models and applications to image and video processing. Boston, MA: Springer US; 2001. p. 179–200.
+View
+Google Scholar
+Samsung Display Co. Ltd.",1,1,Subjective assessment of visual fidelity: Comparison of forced-choice methods,v.0.1
+10,file10.txt,https://doi.org/10.1002/jsid.1280,20240501,4670-PPI OLEDoS pixel circuit design for wide data voltage range in a 5 V 0.13 μm CMOS process,"current uniformity, microdisplay, OLEDoS, pixel circuit, wide data voltage rage","Abstract
+OLEDoS displays hold great promise for AR/VR applications, but the ultra-high pixel density required for microdisplays, exceeding several thousand PPI, presents significant challenges for pixel circuit design. Above all, the maximum OLED current of each OLEDoS sub-pixel is extremely low, on the order of several nanoamperes or less, resulting in a data voltage range narrower than a few hundred millivolts. Consequently, for example, when expressing 10-bit grayscale, designing data driver circuits to divide the data voltage range into 1024 levels becomes exceedingly challenging. Furthermore, circuit techniques that compensate for variations in transistor characteristics are nearly inapplicable due to the ultra-small pixel area. This paper proposes a pixel circuit design method to expand the data voltage range for a 4670-PPI OLEDoS display while considering current uniformity. The effectiveness of the proposed pixel circuit was verified through measurements on 40 × 120 pixel arrays fabricated in a 5 V 0.13 μm CMOS process.",32,5,9,17,"Hyeon-Jun Shin, Yong-Duck Kim, Byong-Deok Choi","1Haas G. Microdisplays for augmented and virtual reality. SID Symp Dig Tech Pap. 2018; 49(1): 506–509. https://doi.org/10.1002/sdtp.12445
+View
+Google Scholar
+Samsung Display Co. Ltd.
+2Li PK. LCOS and AR/VR. Information Display. 2018; 34(2): 12–15. https://doi.org/10.1002/j.2637-496X.2018.tb01068.x
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+3Yang Z, Qian Y, Wu S-T. Emerging microdisplay technologies for AR/VR applications. SID Symp Dig Tech Pap. 2023; 54(1): 849–852. https://doi.org/10.1002/sdtp.16697
+View
+Google Scholar
+Samsung Display Co. Ltd.
+4Kwak B-C, Kwon O-K. A 2822-ppi resolution pixel circuit with high luminance uniformity for OLED microdisplays. J Disp Technol. 2016; 12(10): 1083–1088. https://doi.org/10.1109/JDT.2016.2593048
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+5Na J-S, Hong S-K, Kwon O-K. A 4410-ppi resolution pixel circuit for high luminance uniformity of OLEDoS microdisplays. IEEE J Electron Devices Soc. 2019; 7: 1026–1032. https://doi.org/10.1109/JEDS.2019.2935766
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+6Liu B, Ding D, Zhou T, Zhang M. A novel pixel circuit providing expanded input voltage range for OLEDoS microdisplays. SID Symp Dig Tech Pap. 2017; 48(1): 1438–1441. https://doi.org/10.1002/sdtp.11916
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.
+7Kwak B-C, Lim H-S, Kwon O-K. Organic light-emitting diode-on-silicon pixel circuit using the source follower structure with active load for microdisplays. Jpn J Appl Phys. 2011; 50(3): 559–595.
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+8Li HG, Guo XY, Lu HY, Shao X, Yang D, Wang X. Novel 4T1C pixel circuit for high image quality OLEDoS microdisplays. J Soc Info Disp. 2019; 27(9): 529–535. https://doi.org/10.1002/jsid.763
+View
+CAS
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+9Gohardehi S, Sachdev M. Dual-driver pixel circuit and associated drivers for low-power OLEDoS microdisplays. SID Symp Dig Tech Pap. 2022; 53(1): 98–101. https://doi.org/10.1002/sdtp.15426
+View
+Google Scholar
+Samsung Display Co. Ltd.
+10Kim H-S, Yang JH, Park SH, Ryu ST, Cho GH. A 10-bit column-driver IC with parasitic-insensitive iterative charge-sharing based capacitor-string interpolation for mobile active-matrix LCDs. IEEE J Solid-State Circuits. 2014; 49(3): 766–782. https://doi.org/10.1109/JSSC.2014.2302301
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+11Na J-S, Hong S-K, Kwon O-K. A highly linear 10-bit DAC of data driver IC using source degeneration load for active matrix flat-panel displays. IEEE Trans Circuits Syst II: Exp Briefs. 2020; 67(11): 2312–2316.
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+12Lim G-W, Kang GG, Ma H, Jeong M, Kim HS. An area-efficient 10-bit source-driver IC with LSB-stacked LV-to-HV-amplify DAC for mobile OLED displays. IEEE J Solid-State Circuits. 2023; 58(11): 3164–3178. https://doi.org/10.1109/JSSC.2023.3289503
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+13Dawson RMA, Shen Z, Furst DA, Connor S, Hsu J, Kane MG, et al. The impact of the transient response of organic light emitting diodes on the design of active matrix OLED displays. IEEE IEDM Tech Dig. 1998; 875–878.
+Google Scholar
+Samsung Display Co. Ltd.
+14Choi S-M, Kwon O-K, Komiya N, Chung H-K. A self-compensated voltage programming pixel structure for active-matrix organic light emitting diodes. IDW Tech Dig. 2003; 535–538.
+Google Scholar
+Samsung Display Co. Ltd.
+15Keum N-H, Hong S-K, Kwon O-K. An AMOLED pixel circuit with a compensating scheme for variations in subthreshold slope and threshold voltage of driving TFTs. IEEE J Solid-State Circuits. 2020; 55(11): 3087–3096. https://doi.org/10.1109/JSSC.2020.3014149
+View
+Web of Science®
+Google Scholar
+Samsung Display Co. Ltd.
+16Komiya N, Oh CY, Eom KM, Jeong JT, Chung HK, Choi SM, et al. Comparison of Vth compensation ability among voltage programming circuits for AMOLED panels. IDW Tech Dig. 2003; 257–278.
+Google Scholar
+Samsung Display Co. Ltd.
+17Shishido H, Katsui S, Kobayashi H, Nakagawa T, Tamatsukuri Y, Uesaka S, et al. 5291-ppi microdisplay using CAAC-IGZO FET with channel length of 60 nm. SID Symp Dig Tech Pap. 2020; 51(1): 293–296. https://doi.org/10.1002/sdtp.13861
+View
+CAS
+Google Scholar
+Samsung Display Co. Ltd.",1,1,current uniformity  microdisplay  OLEDoS  pixel circuit  wide data voltage rage 4670-PPI OLEDoS pixel circuit design for wide data voltage range in a 5 V 0.13 μm CMOS process,v.0.1
