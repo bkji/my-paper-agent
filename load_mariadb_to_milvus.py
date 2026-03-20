@@ -34,9 +34,10 @@ MILVUS_DATABASE = os.getenv("MILVUS_DATABASE", "m_paper")
 MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "m_sid_v_09_01")
 
 # Embedding
-LMSTUDIO_URL = os.getenv("LMSTUDIO_URL", "http://localhost:20020")
+EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "http://localhost:20020/v1")
+EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "lm-studio")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-bge-m3")
-EMBEDDING_DIM = 1024
+EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))
 
 
 def fetch_from_mariadb():
@@ -55,8 +56,9 @@ def get_embeddings(texts, batch_size=8):
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
         resp = requests.post(
-            f"{LMSTUDIO_URL}/v1/embeddings",
+            f"{EMBEDDING_BASE_URL}/embeddings",
             json={"model": EMBEDDING_MODEL, "input": batch},
+            headers={"Authorization": f"Bearer {EMBEDDING_API_KEY}"},
         )
         resp.raise_for_status()
         data = resp.json()["data"]
