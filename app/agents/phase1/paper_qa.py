@@ -6,7 +6,7 @@ import logging
 from langgraph.graph import StateGraph, END
 
 from app.agents.state import AgentState
-from app.agents.common import retrieve_by_query, format_context, build_sources
+from app.agents.common import retrieve_by_query, format_context, build_sources, inject_date_context
 from app.core import llm
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ async def generate(state: AgentState) -> AgentState:
         return state
 
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": inject_date_context(SYSTEM_PROMPT, state)},
         {"role": "user", "content": CONTEXT_TEMPLATE.format(context=context, query=query)},
     ]
 

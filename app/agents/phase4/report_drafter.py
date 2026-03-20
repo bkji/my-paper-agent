@@ -23,7 +23,7 @@ async def gather_inputs(state: AgentState) -> AgentState:
 async def draft_report(state: AgentState) -> AgentState:
     answer = await llm_text_call(system_prompt=DRAFT_SYSTEM,
         user_prompt=f"Request: {state.get('query','')}\n\n### Reference Papers\n\n{state.get('context','')}",
-        user_id=state.get("user_id"), trace_name="report_draft", temperature=0.3)
+        user_id=state.get("user_id"), trace_name="report_draft", temperature=0.3, state=state)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results",[]))
     return state

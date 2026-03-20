@@ -33,7 +33,8 @@ async def analyze_trends(state: AgentState) -> AgentState:
         system_prompt=ANALYZE_SYSTEM,
         user_prompt=f"Technology area: {state.get('query','')}\n\n### Papers (newest first)\n\n{state.get('context','')}",
         user_id=state.get("user_id"), trace_name="trend_analyze", temperature=0.4,
-    )
+    state=state,
+)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results", []))
     return state

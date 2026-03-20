@@ -37,7 +37,7 @@ async def rank_and_recommend(state: AgentState) -> AgentState:
     authors_info = "\n".join(f"- {name}: {count} publications" for name, count in top_authors)
     answer = await llm_text_call(system_prompt=RECOMMEND_SYSTEM,
         user_prompt=f"Topic: {state.get('query','')}\n\n### Top Authors\n{authors_info}\n\n### Papers\n\n{state.get('context','')}",
-        user_id=state.get("user_id"), trace_name="knowledge_recommend", temperature=0.3)
+        user_id=state.get("user_id"), trace_name="knowledge_recommend", temperature=0.3, state=state)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results",[]))
     return state

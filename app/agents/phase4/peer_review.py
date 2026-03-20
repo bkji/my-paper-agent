@@ -26,7 +26,7 @@ async def parse_manuscript(state: AgentState) -> AgentState:
 async def review(state: AgentState) -> AgentState:
     answer = await llm_text_call(system_prompt=REVIEW_SYSTEM,
         user_prompt=f"Manuscript topic: {state.get('query','')}\n\n### Related Work\n\n{state.get('context','')}",
-        user_id=state.get("user_id"), trace_name="peer_review", temperature=0.4)
+        user_id=state.get("user_id"), trace_name="peer_review", temperature=0.4, state=state)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results",[]))
     return state

@@ -12,9 +12,12 @@ from typing import Any
 
 from langgraph.graph import StateGraph, END
 
+from datetime import datetime
+
 from app.agents.state import AgentState
 from app.core.langfuse_client import observe, langfuse_context
 from app.core.date_parser import extract_date_filters
+from app.core.tools import get_current_datetime, get_current_date_context
 from app.agents.common import llm_json_call
 
 logger = logging.getLogger(__name__)
@@ -106,25 +109,35 @@ Rules:
 
 @observe(name="supervisor_extract_dates")
 async def extract_dates(state: AgentState) -> AgentState:
-    """[NEW] 쿼리에서 날짜 표현을 추출하여 filters에 반영한다."""
+    """쿼리에서 날짜 표현을 추출하여 filters에 반영한다. 서버 시간을 기준으로 상대 날짜를 계산."""
     query = state.get("query", "")
     filters = state.get("filters") or {}
 
-    date_filters = extract_date_filters(query)
+    # 서버 현재 시간을 기준으로 날짜 파싱
+    now = datetime.now()
+    server_time = get_current_datetime()
+
+    date_filters = extract_date_filters(query, reference_date=now)
     if date_filters:
-        # 기존 filters에 날짜 필터 병합 (명시적 필터가 우선)
         if "coverdate_from" not in filters:
             filters["coverdate_from"] = date_filters["coverdate_from"]
         if "coverdate_to" not in filters:
             filters["coverdate_to"] = date_filters["coverdate_to"]
         state["filters"] = filters
         logger.info(
-            "[Supervisor] extracted date filters: from=%s, to=%s",
+            "[Supervisor] extracted date filters: from=%s, to=%s (server_time=%s)",
             date_filters.get("coverdate_from"), date_filters.get("coverdate_to"),
+            server_time["datetime"],
         )
-        langfuse_context(output={"date_filters": date_filters})
+        langfuse_context(output={"date_filters": date_filters, "server_time": server_time["datetime"]})
     else:
         state["filters"] = filters if filters else None
+
+    # 메타데이터에 서버 시간과 날짜 컨텍스트 저장 → 하위 agent들이 사용
+    metadata = state.get("metadata") or {}
+    metadata["server_time"] = server_time
+    metadata["date_context"] = get_current_date_context()
+    state["metadata"] = metadata
 
     return state
 
@@ -150,6 +163,7 @@ async def classify_intent(state: AgentState) -> AgentState:
             trace_name="classify_intent",
             user_id=state.get("user_id"),
             temperature=0.1,
+            state=state,
         )
         agent_type = result.get("agent_type", "paper_qa")
         reason = result.get("reason", "")

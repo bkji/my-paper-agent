@@ -19,7 +19,7 @@ Rank by potential impact. Answer in the same language as the user's question."""
 async def decompose_topic(state: AgentState) -> AgentState:
     query = state.get("query", "")
     result = await llm_json_call(system_prompt=DECOMPOSE_SYSTEM, user_prompt=f"Research topic: {query}",
-                                  user_id=state.get("user_id"), trace_name="idea_gen_decompose")
+                                  user_id=state.get("user_id"), trace_name="idea_gen_decompose", state=state)
     state["metadata"] = state.get("metadata", {})
     state["metadata"]["sub_topics"] = result.get("sub_topics", [{"name": query, "search_queries": [query], "domain": "display"}])
     state["metadata"]["constraints"] = result.get("constraints", [])
@@ -49,7 +49,8 @@ async def generate_ideas(state: AgentState) -> AgentState:
         system_prompt=IDEATION_SYSTEM,
         user_prompt=f"Research topic: {query}\nConstraints:\n{constraints_text}\n\n### Cross-referenced Papers\n\n{context}",
         user_id=state.get("user_id"), trace_name="idea_gen_generate", temperature=0.7,
-    )
+    state=state,
+)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results", []))
     return state

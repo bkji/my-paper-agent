@@ -6,8 +6,23 @@ import logging
 
 from app.config import settings
 from app.core import embeddings, vectorstore, llm
+from app.core.tools import get_current_date_context
 
 logger = logging.getLogger(__name__)
+
+
+def inject_date_context(system_prompt: str, state: dict | None = None) -> str:
+    """시스템 프롬프트에 현재 서버 날짜/시간 정보를 주입한다.
+
+    state에 metadata.date_context가 있으면 그것을 사용하고,
+    없으면 서버 시간에서 직접 생성한다.
+    """
+    date_ctx = None
+    if state:
+        date_ctx = (state.get("metadata") or {}).get("date_context")
+    if not date_ctx:
+        date_ctx = get_current_date_context()
+    return f"[Server Time Info]\n{date_ctx}\n\n{system_prompt}"
 
 
 def format_context(search_results: list[dict]) -> str:
@@ -95,10 +110,11 @@ async def llm_json_call(
     user_id: str | None = None,
     trace_name: str = "llm_json_call",
     temperature: float = 0.3,
+    state: dict | None = None,
 ) -> dict | list:
-    """LLM을 호출하여 JSON 결과를 파싱한다."""
+    """LLM을 호출하여 JSON 결과를 파싱한다. 현재 서버 날짜 정보를 자동 주입."""
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": inject_date_context(system_prompt, state)},
         {"role": "user", "content": user_prompt},
     ]
     raw = await llm.chat_completion(
@@ -125,10 +141,11 @@ async def llm_text_call(
     user_id: str | None = None,
     trace_name: str = "llm_text_call",
     temperature: float = 0.3,
+    state: dict | None = None,
 ) -> str:
-    """LLM을 호출하여 텍스트 결과를 반환한다."""
+    """LLM을 호출하여 텍스트 결과를 반환한다. 현재 서버 날짜 정보를 자동 주입."""
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": inject_date_context(system_prompt, state)},
         {"role": "user", "content": user_prompt},
     ]
     return await llm.chat_completion(

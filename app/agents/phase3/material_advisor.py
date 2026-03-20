@@ -18,7 +18,7 @@ Cite papers [Author, Year]. Answer in the same language as the user's question."
 
 async def parse_goal(state: AgentState) -> AgentState:
     result = await llm_json_call(system_prompt=PARSE_SYSTEM, user_prompt=state.get("query",""),
-                                  user_id=state.get("user_id"), trace_name="material_parse")
+                                  user_id=state.get("user_id"), trace_name="material_parse", state=state)
     state["metadata"] = state.get("metadata", {})
     state["metadata"]["search_queries"] = result.get("search_queries", [state.get("query","")])
     return state
@@ -34,7 +34,7 @@ async def search_materials(state: AgentState) -> AgentState:
 async def compare_and_recommend(state: AgentState) -> AgentState:
     answer = await llm_text_call(system_prompt=COMPARE_SYSTEM,
         user_prompt=f"Goal: {state.get('query','')}\n\n### Related Papers\n\n{state.get('context','')}",
-        user_id=state.get("user_id"), trace_name="material_compare", temperature=0.3)
+        user_id=state.get("user_id"), trace_name="material_compare", temperature=0.3, state=state)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results",[]))
     return state

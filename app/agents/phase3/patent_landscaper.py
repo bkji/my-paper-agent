@@ -23,7 +23,7 @@ async def search_patents(state: AgentState) -> AgentState:
 async def analyze_landscape(state: AgentState) -> AgentState:
     answer = await llm_text_call(system_prompt=ANALYZE_SYSTEM,
         user_prompt=f"Topic: {state.get('query','')}\n\n### Papers/Patents\n\n{state.get('context','')}",
-        user_id=state.get("user_id"), trace_name="patent_analyze", temperature=0.3)
+        user_id=state.get("user_id"), trace_name="patent_analyze", temperature=0.3, state=state)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results",[]))
     return state

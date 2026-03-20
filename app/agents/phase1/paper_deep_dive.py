@@ -58,7 +58,8 @@ async def analyze(state: AgentState) -> AgentState:
         system_prompt=ANALYZE_SYSTEM,
         user_prompt=f"User request: {query}\n\n### Paper Content\n\n{context}",
         user_id=user_id, trace_name="deep_dive_analyze", temperature=0.3,
-    )
+    state=state,
+)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results", []))
     return state

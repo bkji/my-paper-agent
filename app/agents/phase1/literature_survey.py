@@ -41,7 +41,8 @@ async def plan_survey(state: AgentState) -> AgentState:
         system_prompt=PLAN_SYSTEM,
         user_prompt=f"Research topic: {query}",
         user_id=user_id, trace_name="lit_survey_plan",
-    )
+    state=state,
+)
     sections = plan.get("sections", [
         {"title": "Background", "search_queries": [query]},
         {"title": "Key Techniques", "search_queries": [query]},
@@ -81,7 +82,8 @@ async def synthesize(state: AgentState) -> AgentState:
         system_prompt=SYNTHESIZE_SYSTEM,
         user_prompt=f"Topic: {query}\n\n### Retrieved Papers by Section\n\n{context}",
         user_id=user_id, trace_name="lit_survey_synthesize", temperature=0.4,
-    )
+    state=state,
+)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results", []))
     return state

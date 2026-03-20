@@ -21,7 +21,7 @@ Rank by feasibility × impact. Answer in the same language as the user's questio
 async def extract_problem(state: AgentState) -> AgentState:
     result = await llm_json_call(system_prompt=EXTRACT_SYSTEM,
                                   user_prompt=f"Display technology problem: {state.get('query','')}",
-                                  user_id=state.get("user_id"), trace_name="cross_domain_extract")
+                                  user_id=state.get("user_id"), trace_name="cross_domain_extract", state=state)
     state["metadata"] = state.get("metadata", {})
     state["metadata"]["abstract_problem"] = result.get("abstract_problem", state.get("query",""))
     state["metadata"]["cross_search_queries"] = result.get("cross_search_queries", [])
@@ -51,7 +51,8 @@ async def map_to_display(state: AgentState) -> AgentState:
         system_prompt=MAP_SYSTEM,
         user_prompt=f"Original problem: {state.get('query','')}\nAbstracted: {state.get('metadata',{}).get('abstract_problem','')}\n\n### Papers\n\n{state.get('context','')}",
         user_id=state.get("user_id"), trace_name="cross_domain_map", temperature=0.5,
-    )
+    state=state,
+)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results", []))
     return state

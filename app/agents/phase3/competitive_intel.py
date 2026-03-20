@@ -28,7 +28,7 @@ async def search_competitor_news(state: AgentState) -> AgentState:
 async def generate_briefing(state: AgentState) -> AgentState:
     answer = await llm_text_call(system_prompt=BRIEFING_SYSTEM,
         user_prompt=f"Query: {state.get('query','')}\n\n### Competitor Papers\n\n{state.get('context','')}",
-        user_id=state.get("user_id"), trace_name="competitive_briefing", temperature=0.3)
+        user_id=state.get("user_id"), trace_name="competitive_briefing", temperature=0.3, state=state)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results",[]))
     return state

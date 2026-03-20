@@ -20,7 +20,7 @@ Based on related papers, design a comprehensive experiment:
 
 async def parse_hypothesis(state: AgentState) -> AgentState:
     result = await llm_json_call(system_prompt=PARSE_SYSTEM, user_prompt=state.get("query",""),
-                                  user_id=state.get("user_id"), trace_name="exp_parse")
+                                  user_id=state.get("user_id"), trace_name="exp_parse", state=state)
     state["metadata"] = state.get("metadata", {})
     state["metadata"]["hypothesis"] = result.get("hypothesis", state.get("query",""))
     state["metadata"]["search_queries"] = result.get("search_queries", [state.get("query","")])
@@ -39,7 +39,8 @@ async def design_experiment(state: AgentState) -> AgentState:
         system_prompt=DESIGN_SYSTEM,
         user_prompt=f"Hypothesis: {state.get('metadata',{}).get('hypothesis','')}\n\n### Related Papers\n\n{state.get('context','')}",
         user_id=state.get("user_id"), trace_name="exp_design", temperature=0.3,
-    )
+    state=state,
+)
     state["answer"] = answer
     state["sources"] = build_sources(state.get("search_results",[]))
     return state
