@@ -82,7 +82,8 @@ def create_milvus_collection():
 
     # 스키마 정의
     fields = [
-        FieldSchema(name="mariadb_id", dtype=DataType.INT64, is_primary=True),
+        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+        FieldSchema(name="mariadb_id", dtype=DataType.INT64),
         FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=512),
         FieldSchema(name="doi", dtype=DataType.VARCHAR, max_length=256),
         FieldSchema(name="coverdate", dtype=DataType.INT64),
@@ -174,6 +175,15 @@ def create_indexes(collection):
         },
     )
     print("bm25_keywords_sparse 인덱스 생성 완료 (SPARSE_INVERTED_INDEX, BM25)")
+
+    # 스칼라 필드 인덱스
+    scalar_index_fields = ["coverdate", "paper_keyword", "title", "volume", "issue", "author"]
+    for field_name in scalar_index_fields:
+        collection.create_index(
+            field_name=field_name,
+            index_params={"index_type": "INVERTED"},
+        )
+        print(f"{field_name} 인덱스 생성 완료 (INVERTED)")
 
 
 def main():
