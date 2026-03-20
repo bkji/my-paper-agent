@@ -36,6 +36,10 @@ AGENT_REGISTRY: dict[str, dict[str, Any]] = {
         "module": "app.agents.phase1.paper_deep_dive",
         "description": "특정 논문 심층 분석",
     },
+    "analytics": {
+        "module": "app.agents.phase1.analytics",
+        "description": "논문 통계/집계/목록 조회 (편수, 추이, 리스트, 그래프)",
+    },
     # Phase 2
     "idea_generator": {
         "module": "app.agents.phase2.idea_generator",
@@ -89,6 +93,7 @@ Available agents:
 - paper_qa: Simple question about papers, searching for specific information in literature
 - literature_survey: Request for comprehensive literature review on a topic
 - paper_deep_dive: Deep analysis of a specific paper (by DOI, title, or detailed reference)
+- analytics: Paper statistics, counts, lists, trends over time (monthly/yearly counts, paper lists by condition, aggregation)
 - idea_generator: Request for new research ideas, brainstorming, novel approaches
 - cross_domain: Applying concepts from other fields to display technology
 - trend_analyzer: Technology trend analysis, timeline, evolution of a field
@@ -101,6 +106,7 @@ Available agents:
 - knowledge_connector: Finding experts, author network, collaboration opportunities
 
 Rules:
+- If the query asks for counts, statistics, paper lists, monthly/yearly trends → analytics
 - If the query is a simple factual question about papers → paper_qa
 - If the query asks for a survey/review/overview → literature_survey
 - If ambiguous, default to paper_qa

@@ -120,6 +120,130 @@ async def save_paper(paper: dict[str, Any], **kwargs) -> str:
     return paper_id
 
 
+@observe(name="db_aggregate_papers")
+async def aggregate_papers(
+    coverdate_from: int | None = None,
+    coverdate_to: int | None = None,
+    keyword: str | None = None,
+    author: str | None = None,
+    group_by: str = "month",
+    **kwargs,
+) -> list[dict[str, Any]]:
+    """논문을 기간/키워드/저자별로 집계한다. MariaDB에서 직접 SQL 수행.
+
+    Args:
+        group_by: "month" (YYYYMM), "year" (YYYY), "quarter" (YYYYQ*)
+    Returns:
+        [{"period": "202401", "count": 5, "titles": ["...", ...]}, ...]
+    """
+    logger.info("aggregate_papers: from=%s, to=%s, keyword=%s, group_by=%s",
+                coverdate_from, coverdate_to, keyword, group_by)
+
+    from sqlalchemy import text as sql_text
+
+    # chunk_id=1인 것만 세야 논문 편수가 됨 (chunk 중복 제거)
+    where_parts = ["(chunk_id = 1 OR chunk_id IS NULL)"]
+    params: dict[str, Any] = {}
+
+    if coverdate_from:
+        where_parts.append("coverdate >= :cd_from")
+        params["cd_from"] = int(coverdate_from)
+    if coverdate_to:
+        where_parts.append("coverdate <= :cd_to")
+        params["cd_to"] = int(coverdate_to)
+    if keyword:
+        where_parts.append("(title LIKE :kw OR paper_keyword LIKE :kw OR bm25_keywords LIKE :kw)")
+        params["kw"] = f"%{keyword}%"
+    if author:
+        where_parts.append("author LIKE :au")
+        params["au"] = f"%{author}%"
+
+    where_clause = " AND ".join(where_parts)
+
+    if group_by == "year":
+        group_expr = "FLOOR(coverdate / 10000)"
+        period_expr = "CAST(FLOOR(coverdate / 10000) AS CHAR)"
+    elif group_by == "quarter":
+        group_expr = "CONCAT(FLOOR(coverdate / 10000), 'Q', CEIL(MOD(FLOOR(coverdate / 100), 100) / 3))"
+        period_expr = group_expr
+    else:  # month
+        group_expr = "FLOOR(coverdate / 100)"
+        period_expr = "CAST(FLOOR(coverdate / 100) AS CHAR)"
+
+    sql = f"""
+        SELECT {period_expr} AS period,
+               COUNT(*) AS cnt,
+               GROUP_CONCAT(DISTINCT LEFT(title, 80) SEPARATOR ' || ') AS titles
+        FROM sid_v_09_01
+        WHERE {where_clause}
+        GROUP BY {group_expr}
+        ORDER BY {group_expr}
+    """
+
+    with SessionLocal() as db:
+        result = db.execute(sql_text(sql), params)
+        rows = [{"period": str(row[0]), "count": row[1], "titles": (row[2] or "").split(" || ")} for row in result]
+
+    langfuse_context(output={"group_by": group_by, "period_count": len(rows), "total": sum(r["count"] for r in rows)})
+    return rows
+
+
+@observe(name="db_list_papers")
+async def list_papers(
+    coverdate_from: int | None = None,
+    coverdate_to: int | None = None,
+    keyword: str | None = None,
+    author: str | None = None,
+    limit: int = 100,
+    **kwargs,
+) -> list[dict[str, Any]]:
+    """조건에 맞는 논문 목록을 반환한다 (chunk_id=1만, 중복 없는 논문 단위).
+
+    집계가 아닌 리스트가 필요할 때 사용.
+    """
+    from sqlalchemy import text as sql_text
+
+    where_parts = ["(chunk_id = 1 OR chunk_id IS NULL)"]
+    params: dict[str, Any] = {}
+
+    if coverdate_from:
+        where_parts.append("coverdate >= :cd_from")
+        params["cd_from"] = int(coverdate_from)
+    if coverdate_to:
+        where_parts.append("coverdate <= :cd_to")
+        params["cd_to"] = int(coverdate_to)
+    if keyword:
+        where_parts.append("(title LIKE :kw OR paper_keyword LIKE :kw OR bm25_keywords LIKE :kw)")
+        params["kw"] = f"%{keyword}%"
+    if author:
+        where_parts.append("author LIKE :au")
+        params["au"] = f"%{author}%"
+
+    where_clause = " AND ".join(where_parts)
+    params["lim"] = limit
+
+    sql = f"""
+        SELECT mariadb_id, filename, doi, coverdate, title, paper_keyword, author, volume, issue
+        FROM sid_v_09_01
+        WHERE {where_clause}
+        ORDER BY coverdate DESC
+        LIMIT :lim
+    """
+
+    with SessionLocal() as db:
+        result = db.execute(sql_text(sql), params)
+        rows = []
+        for row in result:
+            rows.append({
+                "mariadb_id": row[0], "filename": row[1], "doi": row[2],
+                "coverdate": row[3], "title": row[4], "paper_keyword": row[5],
+                "author": row[6], "volume": row[7], "issue": row[8],
+            })
+
+    langfuse_context(output={"count": len(rows)})
+    return rows
+
+
 def _paper_to_dict(paper: Paper) -> dict[str, Any]:
     return {
         "id": paper.id,
