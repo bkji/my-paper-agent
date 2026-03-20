@@ -208,3 +208,12 @@ __marimo__/
 
 # Node
 node_modules/
+
+# 민감정보
+langfuse.md
+
+# 임시 파일
+_tmp_*
+
+# Claude Code
+.claude/

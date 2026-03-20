@@ -1,0 +1,134 @@
+"""한국어 날짜 표현 파서 — 자연어 쿼리에서 날짜 필터를 추출한다.
+
+지원 패턴:
+- D1 절대(특정): "2024년 11월", "2024년 3월"
+- D2 절대(범위): "2023년 3분기", "2024년 상반기", "2022~2024년", "2023년"
+- D3 상대: "최근 6개월", "작년", "올해", "지난달", "올해 초", "작년 여름"
+- D4 비교: "2022년 대비 2024년", "2020년과 2023년 비교"
+"""
+from __future__ import annotations
+
+import calendar
+import re
+import logging
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+logger = logging.getLogger(__name__)
+
+
+def extract_date_filters(query: str, reference_date: datetime | None = None) -> dict | None:
+    """쿼리에서 날짜 표현을 추출하여 coverdate_from/to 필터를 반환한다.
+
+    Returns:
+        dict with 'coverdate_from', 'coverdate_to' (YYYYMMDD int) or None
+    """
+    ref = reference_date or datetime.now()
+
+    # D4: 비교 패턴 (두 연도가 "대비", "비교", "vs", "변화"로 연결)
+    m = re.search(r'(\d{4})년?\s*(?:대비|과|와|vs\.?)\s*(\d{4})년', query)
+    if m:
+        y1, y2 = int(m.group(1)), int(m.group(2))
+        if y1 > y2:
+            y1, y2 = y2, y1
+        return {"coverdate_from": y1 * 10000 + 101, "coverdate_to": y2 * 10000 + 1231}
+
+    m = re.search(r'(\d{4})\s*[~\-–]\s*(\d{4})년?\s*(?:변화|추이|비교)', query)
+    if m:
+        y1, y2 = int(m.group(1)), int(m.group(2))
+        return {"coverdate_from": y1 * 10000 + 101, "coverdate_to": y2 * 10000 + 1231}
+
+    # D1: 절대 연월 "2024년 11월"
+    m = re.search(r'(\d{4})년\s*(\d{1,2})월', query)
+    if m:
+        year, month = int(m.group(1)), int(m.group(2))
+        if 1 <= month <= 12:
+            last_day = calendar.monthrange(year, month)[1]
+            return {
+                "coverdate_from": year * 10000 + month * 100 + 1,
+                "coverdate_to": year * 10000 + month * 100 + last_day,
+            }
+
+    # D2: 분기 "2023년 3분기"
+    m = re.search(r'(\d{4})년\s*(\d)\s*분기', query)
+    if m:
+        year, q = int(m.group(1)), int(m.group(2))
+        if 1 <= q <= 4:
+            ms = (q - 1) * 3 + 1
+            me = q * 3
+            last_day = calendar.monthrange(year, me)[1]
+            return {"coverdate_from": year * 10000 + ms * 100 + 1, "coverdate_to": year * 10000 + me * 100 + last_day}
+
+    # D2: 상반기/하반기 "2024년 상반기"
+    m = re.search(r'(\d{4})년\s*(상반기|하반기)', query)
+    if m:
+        year = int(m.group(1))
+        if m.group(2) == "상반기":
+            return {"coverdate_from": year * 10000 + 101, "coverdate_to": year * 10000 + 630}
+        else:
+            return {"coverdate_from": year * 10000 + 701, "coverdate_to": year * 10000 + 1231}
+
+    # D2: 연도 범위 "2022~2024년"
+    m = re.search(r'(\d{4})\s*[~\-–]\s*(\d{4})년?', query)
+    if m:
+        y1, y2 = int(m.group(1)), int(m.group(2))
+        return {"coverdate_from": y1 * 10000 + 101, "coverdate_to": y2 * 10000 + 1231}
+
+    # D3: 최근 N개월 "최근 6개월"
+    m = re.search(r'최근\s*(\d+)\s*개월', query)
+    if m:
+        n = int(m.group(1))
+        dt_from = ref - relativedelta(months=n)
+        return {"coverdate_from": int(dt_from.strftime("%Y%m%d")), "coverdate_to": int(ref.strftime("%Y%m%d"))}
+
+    # D3: 최근 N년 "최근 3년"
+    m = re.search(r'최근\s*(\d+)\s*년', query)
+    if m:
+        n = int(m.group(1))
+        dt_from = ref - relativedelta(years=n)
+        return {"coverdate_from": int(dt_from.strftime("%Y%m%d")), "coverdate_to": int(ref.strftime("%Y%m%d"))}
+
+    # D3: 올해 초
+    if re.search(r'올해\s*초', query):
+        return {"coverdate_from": ref.year * 10000 + 101, "coverdate_to": ref.year * 10000 + 331}
+
+    # D3: 작년 + 계절
+    m = re.search(r'작년\s*(봄|여름|가을|겨울)', query)
+    if m:
+        y = ref.year - 1
+        season = m.group(1)
+        season_map = {
+            "봄": (301, 531), "여름": (601, 831),
+            "가을": (901, 1130), "겨울": (1201, 10228),  # 겨울은 다음해 2월까지
+        }
+        s, e = season_map[season]
+        if season == "겨울":
+            return {"coverdate_from": y * 10000 + 1201, "coverdate_to": (y + 1) * 10000 + 228}
+        return {"coverdate_from": y * 10000 + s, "coverdate_to": y * 10000 + e}
+
+    # D3: 작년/지난해
+    if re.search(r'작년|지난해|전년', query):
+        y = ref.year - 1
+        return {"coverdate_from": y * 10000 + 101, "coverdate_to": y * 10000 + 1231}
+
+    # D3: 올해/금년
+    if re.search(r'올해|금년', query):
+        return {"coverdate_from": ref.year * 10000 + 101, "coverdate_to": int(ref.strftime("%Y%m%d"))}
+
+    # D3: 지난달/전월
+    if re.search(r'지난달|전월', query):
+        dt = ref - relativedelta(months=1)
+        last_day = calendar.monthrange(dt.year, dt.month)[1]
+        return {
+            "coverdate_from": dt.year * 10000 + dt.month * 100 + 1,
+            "coverdate_to": dt.year * 10000 + dt.month * 100 + last_day,
+        }
+
+    # D2: 단독 연도 "2024년" (다른 패턴에 매칭 안 된 경우)
+    m = re.search(r'(\d{4})년', query)
+    if m:
+        year = int(m.group(1))
+        if 2000 <= year <= 2099:
+            return {"coverdate_from": year * 10000 + 101, "coverdate_to": year * 10000 + 1231}
+
+    return None
