@@ -63,7 +63,11 @@ MILVUS_HOST, MILVUS_PORT, MILVUS_DATABASE, MILVUS_COLLECTION
 LANGFUSE_SECRET_KEY, LANGFUSE_PUBLIC_KEY, LANGFUSE_HOST
 
 # OpenAI-compatible API (Open WebUI 연동)
-OPENAI_COMPAT_API_KEY
+OPENAI_COMPAT_API_KEY=co-sci
+
+# 서버 설정
+SERVER_HOST=0.0.0.0
+SERVER_PORT=20035
 
 # RAG
 CHUNK_SIZE, CHUNK_OVERLAP, TOP_K
@@ -132,8 +136,10 @@ LLM 답변 생성 (시스템 프롬프트에 현재 날짜 자동 주입)
 D:/WPy64-312101_paper/python/python.exe load_csv_to_mariadb.py
 D:/WPy64-312101_paper/python/python.exe load_mariadb_to_milvus.py
 
-# FastAPI 서버
-D:/WPy64-312101_paper/python/python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8080
+# FastAPI 서버 (run.bat 또는 직접 실행)
+run.bat
+# 또는
+D:/WPy64-312101_paper/python/python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 20035
 
 # CLI
 D:/WPy64-312101_paper/python/python.exe scripts/cli.py -q "질문"

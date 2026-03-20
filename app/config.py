@@ -53,6 +53,10 @@ class Settings:
     # --- OpenAI-compatible API 키 (Open WebUI 연동, 빈 문자열이면 인증 비활성화) ---
     OPENAI_COMPAT_API_KEY: str = os.getenv("OPENAI_COMPAT_API_KEY", "")
 
+    # --- 서버 설정 ---
+    SERVER_HOST: str = os.getenv("SERVER_HOST", "0.0.0.0")
+    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "20035"))
+
     # --- RAG 파라미터 ---
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "512"))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "50"))

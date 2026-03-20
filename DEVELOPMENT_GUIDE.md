@@ -163,7 +163,7 @@ LLM_MODEL=qwen3-0.6b
 
 # --- Embedding (OpenAI-compatible API) ---
 # 로컬: LM Studio → http://localhost:20020/v1
-# 폐쇄망: TEI → http://localhost:8080/v1
+# 폐쇄망: TEI → http://localhost:20035/v1
 EMBEDDING_BASE_URL=http://localhost:20020/v1
 EMBEDDING_API_KEY=lm-studio
 EMBEDDING_MODEL=text-embedding-bge-m3
@@ -225,10 +225,10 @@ MariaDB `qa_dataset` 테이블에 1,000건 추가 (총 2,080건).
 ### 6-1. FastAPI 서버
 
 ```bash
-D:/WPy64-312101_paper/python/python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+D:/WPy64-312101_paper/python/python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 20035 --reload
 ```
 
-- Swagger UI: `http://localhost:8080/docs`
+- Swagger UI: `http://localhost:20035/docs`
 - API: `POST /api/chat`, `GET /api/agents`, `POST /v1/chat/completions`
 
 ### 6-2. CLI (터미널)
