@@ -58,22 +58,29 @@ Return ONLY valid JSON with these fields:
   "type": "list" or "aggregate",
   "keyword": "search keyword or null",
   "group_by": "month" or "year" or "quarter",
-  "author": "author name or null"
+  "author": "author name or null",
+  "volume": volume number or null,
+  "issue": issue number or null
 }
 
 ## Rules:
-- type: "list" if user wants paper titles/details/목록/제목/보여줘. "aggregate" if user wants only counts/statistics/추이/그래프 without titles.
-- keyword: Extract ONLY the technical/topic keyword for filtering papers (e.g. "OLED", "Micro LED", "holographic"). Set null if no specific topic filter — do NOT include words like "논문", "편수", "제목", "목록".
+- type: "list" if user wants paper titles/details/목록/제목/보여줘/찾아줘. "aggregate" if user wants only counts/statistics/추이/그래프/발표건수 without titles.
+- keyword: Extract ONLY the technical/topic keyword for filtering papers (e.g. "OLED", "Micro LED", "LED", "holographic"). Set null if no specific topic filter — do NOT include words like "논문", "편수", "제목", "목록".
 - group_by: "month" (default), "year" if 연도별/yearly, "quarter" if 분기별.
 - author: Extract author name if mentioned, otherwise null.
+- volume: Extract volume number if mentioned (e.g. "volume 32" → 32), otherwise null.
+- issue: Extract issue number if mentioned (e.g. "issue 10" → 10), otherwise null.
 
 ## Examples:
-"2024년 10월 논문 편수와 제목 보여줘" → {"type": "list", "keyword": null, "group_by": "month", "author": null}
-"OLED 관련 논문 목록" → {"type": "list", "keyword": "OLED", "group_by": "month", "author": null}
-"연도별 Micro LED 논문 편수 추이" → {"type": "aggregate", "keyword": "Micro LED", "group_by": "year", "author": null}
-"최근 6개월 논문 몇 편?" → {"type": "aggregate", "keyword": null, "group_by": "month", "author": null}
-"그 논문들 제목도 보여줘" → {"type": "list", "keyword": null, "group_by": "month", "author": null}
-"holographic grating 관련 논문 찾아줘" → {"type": "list", "keyword": "holographic grating", "group_by": "month", "author": null}"""
+"2024년 10월 논문 편수와 제목 보여줘" → {"type": "list", "keyword": null, "group_by": "month", "author": null, "volume": null, "issue": null}
+"OLED 관련 논문 목록" → {"type": "list", "keyword": "OLED", "group_by": "month", "author": null, "volume": null, "issue": null}
+"연도별 Micro LED 논문 편수 추이" → {"type": "aggregate", "keyword": "Micro LED", "group_by": "year", "author": null, "volume": null, "issue": null}
+"최근 6개월 논문 몇 편?" → {"type": "aggregate", "keyword": null, "group_by": "month", "author": null, "volume": null, "issue": null}
+"그 논문들 제목도 보여줘" → {"type": "list", "keyword": null, "group_by": "month", "author": null, "volume": null, "issue": null}
+"holographic grating 관련 논문 찾아줘" → {"type": "list", "keyword": "holographic grating", "group_by": "month", "author": null, "volume": null, "issue": null}
+"led 관련 논문 찾아줘" → {"type": "list", "keyword": "LED", "group_by": "month", "author": null, "volume": null, "issue": null}
+"Micro LED 관련 논문 최근 5년 연도별 발표건수" → {"type": "aggregate", "keyword": "Micro LED", "group_by": "year", "author": null, "volume": null, "issue": null}
+"volume 32, issue 10인 논문 제목들 보여줘" → {"type": "list", "keyword": null, "group_by": "month", "author": null, "volume": 32, "issue": 10}"""
 
 
 async def classify_analytics_type(state: AgentState) -> AgentState:
@@ -109,6 +116,20 @@ async def classify_analytics_type(state: AgentState) -> AgentState:
         if author and author.lower() not in ("null", "none", ""):
             metadata["analytics_author"] = author
 
+        volume = result.get("volume")
+        if volume is not None and str(volume).lower() not in ("null", "none", ""):
+            try:
+                metadata["analytics_volume"] = int(volume)
+            except (ValueError, TypeError):
+                pass
+
+        issue = result.get("issue")
+        if issue is not None and str(issue).lower() not in ("null", "none", ""):
+            try:
+                metadata["analytics_issue"] = int(issue)
+            except (ValueError, TypeError):
+                pass
+
     except Exception as e:
         logger.warning("[Analytics] LLM classify failed: %s, using defaults", e)
         metadata["analytics_type"] = "list"
@@ -131,13 +152,15 @@ async def fetch_data(state: AgentState) -> AgentState:
     coverdate_from = filters.get("coverdate_from")
     coverdate_to = filters.get("coverdate_to")
     author = filters.get("author") or metadata.get("analytics_author")
+    volume = metadata.get("analytics_volume")
+    issue = metadata.get("analytics_issue")
 
     # 키워드 유효성 검증: keyword로 검색해서 0건이면 keyword 제거 후 재시도
     # (0.6B 모델이 hallucinate하여 잘못된 키워드를 추출하는 경우 방어)
     if keyword:
         test_data = await database.list_papers(
             coverdate_from=coverdate_from, coverdate_to=coverdate_to,
-            keyword=keyword, author=author, limit=1,
+            keyword=keyword, author=author, volume=volume, issue=issue, limit=1,
         )
         if not test_data:
             logger.warning("[Analytics] keyword '%s' returned 0 results, retrying without keyword", keyword)
@@ -152,6 +175,8 @@ async def fetch_data(state: AgentState) -> AgentState:
             keyword=keyword,
             author=author,
             group_by=group_by,
+            volume=volume,
+            issue=issue,
         )
         state["search_results"] = data
 
@@ -176,6 +201,8 @@ async def fetch_data(state: AgentState) -> AgentState:
             coverdate_to=coverdate_to,
             keyword=keyword,
             author=author,
+            volume=volume,
+            issue=issue,
             limit=100,
         )
         state["search_results"] = data

@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from langgraph.graph import StateGraph, END
@@ -90,10 +91,10 @@ Return ONLY JSON: {"agent_type": "<type>", "reason": "<brief>"}
 
 ## Agent types:
 
-analytics: 논문 편수, 건수, 목록, 리스트, 통계, 추이, 월별/연도별 집계, 제목 보여줘, 몇 편
+analytics: 논문 편수, 건수, 목록, 리스트, 통계, 추이, 월별/연도별 집계, 제목 보여줘, 몇 편, 찾아줘, volume, issue
 paper_qa: 논문 내용에 대한 질문, 기술 설명, 원리 질문
 literature_survey: 문헌 리뷰, 서베이, 연구 동향 종합 정리
-paper_deep_dive: 특정 논문 1편을 깊이 분석 (DOI나 제목 지정)
+paper_deep_dive: 특정 논문 1편을 깊이 분석 (DOI나 제목 지정). DOI가 포함된 질문은 반드시 이 에이전트로 분류.
 idea_generator: 새로운 연구 아이디어, 브레인스토밍
 cross_domain: 타 분야 기술을 디스플레이에 적용
 trend_analyzer: 기술 트렌드 분석, 기술 발전 타임라인
@@ -126,9 +127,24 @@ Query: "OLED 소재 연구 동향을 정리해줘"
 → {"agent_type": "literature_survey", "reason": "survey/review request"}
 
 ## Rules:
-- 편수, 건수, 몇 편, 목록, 리스트, 제목 보여줘, 통계, 추이, 그래프 → analytics
+- 편수, 건수, 몇 편, 목록, 리스트, 제목 보여줘, 통계, 추이, 그래프, 찾아줘, volume, issue → analytics
+- DOI가 포함된 질문 (예: "10.1002/jsid.2003") → paper_deep_dive
 - Default: paper_qa
-- Return valid JSON only"""
+- Return valid JSON only
+
+## More Examples:
+
+Query: "led 관련 논문 찾아줘"
+→ {"agent_type": "analytics", "reason": "논문 찾기 list request"}
+
+Query: "volume 32, issue 10인 논문 제목들 보여줘"
+→ {"agent_type": "analytics", "reason": "volume/issue filter list request"}
+
+Query: "Micro LED 관련 논문 최근 5년 연도별 발표건수를 분석해줘"
+→ {"agent_type": "analytics", "reason": "연도별 발표건수 aggregation"}
+
+Query: "10.1002/jsid.2003 논문 정리해줘"
+→ {"agent_type": "paper_deep_dive", "reason": "DOI specified, deep analysis"}"""
 
 
 @observe(name="supervisor_extract_dates")
@@ -164,6 +180,14 @@ async def extract_dates(state: AgentState) -> AgentState:
         langfuse_context(output={"date_filters": date_filters, "server_time": server_time["datetime"]})
     else:
         state["filters"] = filters if filters else None
+
+    # DOI 추출: 쿼리에 DOI 패턴이 있으면 filters에 저장
+    doi_match = re.search(r'(10\.\d{4,}/[^\s,;]+)', query)
+    if doi_match:
+        filters = state.get("filters") or {}
+        filters["doi"] = doi_match.group(1)
+        state["filters"] = filters
+        logger.info("[Supervisor] extracted DOI: %s", doi_match.group(1))
 
     # 메타데이터에 서버 시간과 날짜 컨텍스트 저장 → 하위 agent들이 사용
     metadata = state.get("metadata") or {}

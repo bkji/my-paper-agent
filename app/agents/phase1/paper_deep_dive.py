@@ -41,13 +41,13 @@ async def fetch_paper(state: AgentState) -> AgentState:
     user_id = state.get("user_id")
     filters = state.get("filters")
 
-    # 1. DOI가 명시된 경우 → MariaDB DOI 검색
+    # 1. DOI가 명시된 경우 → MariaDB DOI 검색 (원문 포함)
     if filters and filters.get("doi"):
-        papers = await database.get_papers_by_doi(filters["doi"], user_id=user_id)
-        if papers:
-            paper = papers[0]
+        paper = await database.get_paper_fulltext_by_doi(filters["doi"])
+        if paper:
             state["context"] = _format_fulltext(paper)
             state["search_results"] = [paper]
+            logger.info("[DeepDive] found paper by DOI: '%s'", paper["title"][:60])
             return state
 
     # 2. 쿼리에서 논문 제목 추출 → MariaDB 제목 검색 (원문 전체)

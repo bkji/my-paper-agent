@@ -47,6 +47,22 @@ async def retrieve(state: AgentState) -> AgentState:
 
     logger.info("[PaperQA] retrieve: query='%s'", query[:100])
 
+    # DOI가 명시된 경우 MariaDB에서 원문 조회
+    if filters and filters.get("doi"):
+        paper = await database.get_paper_fulltext_by_doi(filters["doi"])
+        if paper:
+            logger.info("[PaperQA] found paper by DOI from MariaDB: '%s'", paper["title"][:60])
+            state["search_results"] = [paper]
+            state["context"] = (
+                f"[1] Title: {paper.get('title', '')}\n"
+                f"    Author: {paper.get('author', '')}\n"
+                f"    DOI: {paper.get('doi', '')}\n"
+                f"    Date: {paper.get('coverdate', '')}\n"
+                f"    Keywords: {paper.get('paper_keyword', '')}\n"
+                f"    Full Text:\n    {paper.get('paper_text', '')}\n"
+            )
+            return state
+
     # 특정 논문 제목이 언급된 경우 MariaDB에서 원문 조회 시도
     try:
         title_result = await llm_json_call(

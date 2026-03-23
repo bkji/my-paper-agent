@@ -55,13 +55,55 @@ async def get_paper_by_id(paper_id: str, **kwargs) -> dict[str, Any] | None:
 
 @observe(name="db_get_paper_by_doi")
 async def get_papers_by_doi(doi: str, **kwargs) -> list[dict[str, Any]]:
-    """DOI로 논문을 조회한다."""
+    """DOI로 논문을 조회한다. 부분 일치도 지원 (e.g. '10.1002/jsid.2003')."""
     logger.info("get_papers_by_doi: doi=%s", doi)
     with SessionLocal() as db:
+        # 정확히 일치 먼저 시도
         papers = db.query(Paper).filter(Paper.doi == doi).all()
+        # 없으면 부분 일치 (URL prefix 포함된 DOI 대응)
+        if not papers:
+            papers = db.query(Paper).filter(Paper.doi.contains(doi)).all()
         result = [_paper_to_dict(p) for p in papers]
     langfuse_context(output={"count": len(result)})
     return result
+
+
+@observe(name="db_get_paper_fulltext_by_doi")
+async def get_paper_fulltext_by_doi(doi: str, **kwargs) -> dict[str, Any] | None:
+    """DOI(부분 일치)로 논문 원문(전체 텍스트)을 조회한다."""
+    from sqlalchemy import text as sql_text
+
+    logger.info("get_paper_fulltext_by_doi: doi=%s", doi)
+
+    sql = """
+        SELECT mariadb_id, filename, doi, coverdate, title, paper_keyword,
+               paper_text, volume, issue, totalpage, referencetotal,
+               author, `references`, chunk_id, chunk_total_counts
+        FROM sid_v_09_01
+        WHERE (chunk_id = 1 OR chunk_id IS NULL)
+          AND doi LIKE :doi_pattern
+        ORDER BY coverdate DESC
+        LIMIT 1
+    """
+
+    with SessionLocal() as db:
+        result = db.execute(sql_text(sql), {"doi_pattern": f"%{doi}%"})
+        row = result.fetchone()
+        if row is None:
+            langfuse_context(output={"found": False})
+            return None
+        paper = {
+            "mariadb_id": row[0], "filename": row[1], "doi": row[2],
+            "coverdate": row[3], "title": row[4], "paper_keyword": row[5],
+            "paper_text": row[6], "volume": row[7], "issue": row[8],
+            "totalpage": row[9], "referencetotal": row[10],
+            "author": row[11], "references": row[12],
+            "chunk_id": row[13], "chunk_total_counts": row[14],
+        }
+
+    langfuse_context(output={"found": True, "title": paper["title"][:100]})
+    logger.info("get_paper_fulltext_by_doi: found '%s'", paper["title"][:60])
+    return paper
 
 
 @observe(name="db_search_papers")
@@ -120,6 +162,27 @@ async def save_paper(paper: dict[str, Any], **kwargs) -> str:
     return paper_id
 
 
+def _build_keyword_conditions(keyword: str, params: dict[str, Any]) -> str:
+    """키워드 검색 조건을 생성한다. 복합 키워드('Micro LED')는 변형도 함께 검색."""
+    # 기본 LIKE 검색
+    conditions = ["(title LIKE :kw OR paper_keyword LIKE :kw OR bm25_keywords LIKE :kw)"]
+    params["kw"] = f"%{keyword}%"
+
+    # 복합 키워드: 공백/하이픈 변형도 검색 (e.g. "Micro LED" → "micro-LED", "microLED")
+    parts = keyword.split()
+    if len(parts) >= 2:
+        # 하이픈 연결: "Micro LED" → "Micro-LED"
+        hyphenated = "-".join(parts)
+        conditions.append("(title LIKE :kw_hyp OR paper_keyword LIKE :kw_hyp OR bm25_keywords LIKE :kw_hyp)")
+        params["kw_hyp"] = f"%{hyphenated}%"
+        # 붙여쓰기: "Micro LED" → "MicroLED"
+        joined = "".join(parts)
+        conditions.append("(title LIKE :kw_join OR paper_keyword LIKE :kw_join OR bm25_keywords LIKE :kw_join)")
+        params["kw_join"] = f"%{joined}%"
+
+    return "(" + " OR ".join(conditions) + ")"
+
+
 @observe(name="db_aggregate_papers")
 async def aggregate_papers(
     coverdate_from: int | None = None,
@@ -127,6 +190,8 @@ async def aggregate_papers(
     keyword: str | None = None,
     author: str | None = None,
     group_by: str = "month",
+    volume: int | None = None,
+    issue: int | None = None,
     **kwargs,
 ) -> list[dict[str, Any]]:
     """논문을 기간/키워드/저자별로 집계한다. MariaDB에서 직접 SQL 수행.
@@ -152,11 +217,16 @@ async def aggregate_papers(
         where_parts.append("coverdate <= :cd_to")
         params["cd_to"] = int(coverdate_to)
     if keyword:
-        where_parts.append("(title LIKE :kw OR paper_keyword LIKE :kw OR bm25_keywords LIKE :kw)")
-        params["kw"] = f"%{keyword}%"
+        where_parts.append(_build_keyword_conditions(keyword, params))
     if author:
         where_parts.append("author LIKE :au")
         params["au"] = f"%{author}%"
+    if volume is not None:
+        where_parts.append("volume = :vol")
+        params["vol"] = int(volume)
+    if issue is not None:
+        where_parts.append("issue = :iss")
+        params["iss"] = int(issue)
 
     where_clause = " AND ".join(where_parts)
 
@@ -195,6 +265,8 @@ async def list_papers(
     keyword: str | None = None,
     author: str | None = None,
     limit: int = 100,
+    volume: int | None = None,
+    issue: int | None = None,
     **kwargs,
 ) -> list[dict[str, Any]]:
     """조건에 맞는 논문 목록을 반환한다 (chunk_id=1만, 중복 없는 논문 단위).
@@ -213,11 +285,16 @@ async def list_papers(
         where_parts.append("coverdate <= :cd_to")
         params["cd_to"] = int(coverdate_to)
     if keyword:
-        where_parts.append("(title LIKE :kw OR paper_keyword LIKE :kw OR bm25_keywords LIKE :kw)")
-        params["kw"] = f"%{keyword}%"
+        where_parts.append(_build_keyword_conditions(keyword, params))
     if author:
         where_parts.append("author LIKE :au")
         params["au"] = f"%{author}%"
+    if volume is not None:
+        where_parts.append("volume = :vol")
+        params["vol"] = int(volume)
+    if issue is not None:
+        where_parts.append("issue = :iss")
+        params["iss"] = int(issue)
 
     where_clause = " AND ".join(where_parts)
     params["lim"] = limit
