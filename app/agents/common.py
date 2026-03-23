@@ -62,6 +62,7 @@ def build_sources(search_results: list[dict]) -> list[dict]:
         sources.append({
             "paper_id": paper_id,
             "title": doc.get("title", ""),
+            "author": doc.get("author", ""),
             "doi": doc.get("doi"),
             "chunk_id": doc.get("chunk_id", 0),
             "chunk_text": doc.get("paper_text", "")[:300],

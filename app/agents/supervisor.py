@@ -20,6 +20,7 @@ from app.core.langfuse_client import observe, langfuse_context
 from app.core.date_parser import extract_date_filters
 from app.core.tools import get_current_datetime, get_current_date_context
 from app.agents.common import llm_json_call
+from app.agents.citation_agent import append_citation
 
 logger = logging.getLogger(__name__)
 
@@ -274,16 +275,18 @@ async def route_to_agent(state: AgentState) -> AgentState:
 def build_supervisor() -> StateGraph:
     """Supervisor agent graph를 구성한다.
 
-    개선된 흐름: extract_dates → classify_intent → route_to_agent
+    흐름: extract_dates → classify_intent → route_to_agent → append_citation
     """
     graph = StateGraph(AgentState)
     graph.add_node("extract_dates", extract_dates)
     graph.add_node("classify_intent", classify_intent)
     graph.add_node("route_to_agent", route_to_agent)
+    graph.add_node("append_citation", append_citation)
     graph.set_entry_point("extract_dates")
     graph.add_edge("extract_dates", "classify_intent")
     graph.add_edge("classify_intent", "route_to_agent")
-    graph.add_edge("route_to_agent", END)
+    graph.add_edge("route_to_agent", "append_citation")
+    graph.add_edge("append_citation", END)
     return graph.compile()
 
 

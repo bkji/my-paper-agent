@@ -270,6 +270,7 @@ async def generate_response(state: AgentState) -> AgentState:
             {
                 "paper_id": str(r.get("doi") or r.get("filename", "")),
                 "title": r.get("title", ""),
+                "author": r.get("author", ""),
                 "doi": r.get("doi"),
                 "chunk_id": 0,
                 "chunk_text": "",
