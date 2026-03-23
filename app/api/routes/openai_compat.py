@@ -126,12 +126,22 @@ async def chat_completions(request: OAIRequest):
 
     sources = result.get("sources")
     if sources:
-        answer += "\n\n---\n**참고 문헌:**\n"
-        for i, src in enumerate(sources[:5], 1):
+        # 동일 논문 chunk 중복 제거 (DOI 또는 title 기준)
+        seen_titles = set()
+        unique_sources = []
+        for src in sources:
             title = getattr(src, "title", None) or src.get("title", "")
-            doi = getattr(src, "doi", None) or src.get("doi", "")
-            ref = f"  DOI: {doi}" if doi else ""
-            answer += f"{i}. {title}{ref}\n"
+            if title and title not in seen_titles:
+                seen_titles.add(title)
+                unique_sources.append(src)
+
+        if unique_sources:
+            answer += "\n\n---\n**참고 문헌:**\n"
+            for i, src in enumerate(unique_sources[:5], 1):
+                title = src.get("title", "")
+                doi = getattr(src, "doi", None) or src.get("doi", "")
+                ref = f"  DOI: {doi}" if doi else ""
+                answer += f"{i}. {title}{ref}\n"
 
     if request.stream:
         return StreamingResponse(

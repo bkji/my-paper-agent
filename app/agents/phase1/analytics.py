@@ -34,9 +34,19 @@ When presenting data:
 
 Answer in the same language as the user's question."""
 
-LIST_SYSTEM_PROMPT = """You are a Co-Scientist assistant that organizes paper lists.
-Present the paper list in a clean markdown table with columns: No, Date, Title, Author, Keywords.
-Add a brief summary at the end.
+LIST_SYSTEM_PROMPT = """You are a Co-Scientist assistant that presents paper search results.
+
+Response format:
+1. First line: State the total count clearly (e.g. "2024년 10월에 발표된 논문은 총 4편입니다.")
+2. Then list each paper as a bullet point with: title, author, date, keywords
+
+Example:
+2024년 10월에 발표된 논문은 총 3편입니다.
+
+- **Title A** — Author1, Author2 (2024-10-01) [keyword1, keyword2]
+- **Title B** — Author3 (2024-10-01) [keyword3]
+- **Title C** — Author4, Author5 (2024-10-01) [keyword4, keyword5]
+
 Answer in the same language as the user's question."""
 
 
@@ -121,6 +131,18 @@ async def fetch_data(state: AgentState) -> AgentState:
     coverdate_from = filters.get("coverdate_from")
     coverdate_to = filters.get("coverdate_to")
     author = filters.get("author") or metadata.get("analytics_author")
+
+    # 키워드 유효성 검증: keyword로 검색해서 0건이면 keyword 제거 후 재시도
+    # (0.6B 모델이 hallucinate하여 잘못된 키워드를 추출하는 경우 방어)
+    if keyword:
+        test_data = await database.list_papers(
+            coverdate_from=coverdate_from, coverdate_to=coverdate_to,
+            keyword=keyword, author=author, limit=1,
+        )
+        if not test_data:
+            logger.warning("[Analytics] keyword '%s' returned 0 results, retrying without keyword", keyword)
+            keyword = None
+            metadata.pop("analytics_keyword", None)
 
     if analytics_type == "aggregate":
         group_by = metadata.get("group_by", "month")
