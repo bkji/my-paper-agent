@@ -85,32 +85,50 @@ AGENT_REGISTRY: dict[str, dict[str, Any]] = {
     },
 }
 
-INTENT_SYSTEM_PROMPT = """You are an intent classifier for a display R&D Co-Scientist system.
-Classify the user query into exactly ONE of the following agent types.
-Return JSON: {"agent_type": "<type>", "reason": "<brief reason>"}
+INTENT_SYSTEM_PROMPT = """You are an intent classifier. Classify the query into ONE agent type.
+Return ONLY JSON: {"agent_type": "<type>", "reason": "<brief>"}
 
-Available agents:
-- paper_qa: Simple question about papers, searching for specific information in literature
-- literature_survey: Request for comprehensive literature review on a topic
-- paper_deep_dive: Deep analysis of a specific paper (by DOI, title, or detailed reference)
-- analytics: Paper statistics, counts, lists, trends over time (monthly/yearly counts, paper lists by condition, aggregation)
-- idea_generator: Request for new research ideas, brainstorming, novel approaches
-- cross_domain: Applying concepts from other fields to display technology
-- trend_analyzer: Technology trend analysis, timeline, evolution of a field
-- experiment_planner: Designing experiments, experimental methodology, test plans
-- patent_landscaper: Patent analysis, patent landscape, IP white spaces
-- competitive_intel: Competitor analysis, company benchmarking, market intelligence
-- material_advisor: Material selection, process comparison, material properties
-- report_drafter: Writing reports, presentations, summaries
-- peer_review: Reviewing a manuscript, providing feedback on a paper
-- knowledge_connector: Finding experts, author network, collaboration opportunities
+## Agent types:
 
-Rules:
-- If the query asks for counts, statistics, paper lists, monthly/yearly trends → analytics
-- If the query is a simple factual question about papers → paper_qa
-- If the query asks for a survey/review/overview → literature_survey
-- If ambiguous, default to paper_qa
-- Always respond with valid JSON only"""
+analytics: 논문 편수, 건수, 목록, 리스트, 통계, 추이, 월별/연도별 집계, 제목 보여줘, 몇 편
+paper_qa: 논문 내용에 대한 질문, 기술 설명, 원리 질문
+literature_survey: 문헌 리뷰, 서베이, 연구 동향 종합 정리
+paper_deep_dive: 특정 논문 1편을 깊이 분석 (DOI나 제목 지정)
+idea_generator: 새로운 연구 아이디어, 브레인스토밍
+cross_domain: 타 분야 기술을 디스플레이에 적용
+trend_analyzer: 기술 트렌드 분석, 기술 발전 타임라인
+experiment_planner: 실험 설계, 실험 방법론
+patent_landscaper: 특허 분석, 특허 동향
+competitive_intel: 경쟁사 분석, 시장 동향
+material_advisor: 재료/공정 비교, 소재 선택
+report_drafter: 보고서/발표 초안 작성
+peer_review: 논문 리뷰, 피드백
+knowledge_connector: 전문가 매칭, 저자 네트워크
+
+## Examples:
+
+Query: "2024년 10월 논문 편수와 제목 보여줘"
+→ {"agent_type": "analytics", "reason": "편수 and 제목 목록 request"}
+
+Query: "최근 6개월 OLED 논문 몇 편이야?"
+→ {"agent_type": "analytics", "reason": "논문 편수 count"}
+
+Query: "2024년 논문 목록 보여줘"
+→ {"agent_type": "analytics", "reason": "논문 목록 list request"}
+
+Query: "월별 논문 추이 그래프"
+→ {"agent_type": "analytics", "reason": "월별 추이 aggregation"}
+
+Query: "Micro LED 결함 검출 방법은?"
+→ {"agent_type": "paper_qa", "reason": "technical question about paper content"}
+
+Query: "OLED 소재 연구 동향을 정리해줘"
+→ {"agent_type": "literature_survey", "reason": "survey/review request"}
+
+## Rules:
+- 편수, 건수, 몇 편, 목록, 리스트, 제목 보여줘, 통계, 추이, 그래프 → analytics
+- Default: paper_qa
+- Return valid JSON only"""
 
 
 @observe(name="supervisor_extract_dates")
