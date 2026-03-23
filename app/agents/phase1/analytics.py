@@ -257,6 +257,30 @@ async def generate_response(state: AgentState) -> AgentState:
         {"role": "user", "content": prompt},
     ]
 
+    # Stream mode: LLM 호출 스킵, messages만 저장
+    metadata = state.get("metadata") or {}
+    if metadata.get("_stream_mode"):
+        metadata["_llm_messages"] = messages
+        metadata["_llm_temperature"] = 0.3
+        state["metadata"] = metadata
+        state["answer"] = ""
+        # sources는 아래에서 생성
+        results = state.get("search_results", [])
+        if analytics_type == "list" and results:
+            state["sources"] = [
+                {
+                    "paper_id": str(r.get("doi") or r.get("filename", "")),
+                    "title": r.get("title", ""),
+                    "author": r.get("author", ""),
+                    "doi": r.get("doi"),
+                    "chunk_id": 0, "chunk_text": "", "score": 0.0,
+                }
+                for r in results[:20]
+            ]
+        else:
+            state["sources"] = []
+        return state
+
     answer = await llm.chat_completion(
         messages=messages, temperature=0.3,
         trace_name="analytics_generate", user_id=user_id,

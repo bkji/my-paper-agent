@@ -124,6 +124,16 @@ async def generate(state: AgentState) -> AgentState:
         {"role": "user", "content": CONTEXT_TEMPLATE.format(context=context, query=query)},
     ]
 
+    # Stream mode: LLM 호출 스킵, messages만 저장
+    metadata = state.get("metadata") or {}
+    if metadata.get("_stream_mode"):
+        metadata["_llm_messages"] = messages
+        metadata["_llm_temperature"] = 0.3
+        state["metadata"] = metadata
+        state["answer"] = ""
+        state["sources"] = build_sources(search_results)
+        return state
+
     answer = await llm.chat_completion(
         messages=messages, temperature=0.3,
         trace_name="paper_qa_generate", user_id=user_id,

@@ -29,19 +29,14 @@ def _normalize_doi(doi: str | None) -> str:
     return f"https://doi.org/{doi}"
 
 
-async def append_citation(state: AgentState) -> AgentState:
-    """응답에 참조 문헌과 저작권 고지를 추가한다."""
-    answer = state.get("answer", "")
-    sources = state.get("sources") or []
+def format_citation_text(sources: list[dict]) -> str:
+    """sources 리스트로부터 참조 문헌 + 저작권 고지 텍스트를 생성한다.
 
-    if not answer:
-        return state
+    스트리밍/비스트리밍 모두에서 재사용 가능한 헬퍼 함수.
+    """
+    parts = []
 
-    parts = [answer.rstrip()]
-
-    # 참조 문헌 (sources가 있는 경우만)
     if sources:
-        # title 기준 중복 제거
         seen_titles = set()
         unique_sources = []
         for src in sources:
@@ -64,9 +59,23 @@ async def append_citation(state: AgentState) -> AgentState:
                     line += f", DOI: {doi_link}"
                 parts.append(line)
 
-    # 저작권 고지 (항상 추가)
     parts.append(f"\n\n---\n{DISCLAIMER}")
+    return "\n".join(parts)
 
-    state["answer"] = "\n".join(parts)
+
+async def append_citation(state: AgentState) -> AgentState:
+    """응답에 참조 문헌과 저작권 고지를 추가한다."""
+    answer = state.get("answer", "")
+    sources = state.get("sources") or []
+
+    # Stream mode: citation은 API에서 스트리밍 후 별도 처리
+    if (state.get("metadata") or {}).get("_stream_mode"):
+        return state
+
+    if not answer:
+        return state
+
+    citation = format_citation_text(sources)
+    state["answer"] = answer.rstrip() + citation
     logger.info("[Citation] appended citation (%d sources) + disclaimer", len(sources))
     return state

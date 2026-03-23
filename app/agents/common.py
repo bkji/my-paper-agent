@@ -152,11 +152,22 @@ async def llm_text_call(
     temperature: float = 0.3,
     state: dict | None = None,
 ) -> str:
-    """LLM을 호출하여 텍스트 결과를 반환한다. 현재 서버 날짜 정보를 자동 주입."""
+    """LLM을 호출하여 텍스트 결과를 반환한다. 현재 서버 날짜 정보를 자동 주입.
+
+    stream_mode가 활성화된 경우, LLM 호출 대신 messages를 state에 저장하고
+    placeholder를 반환한다 (API 레이어에서 실시간 스트리밍 처리).
+    """
     messages = [
         {"role": "system", "content": inject_date_context(system_prompt, state)},
         {"role": "user", "content": user_prompt},
     ]
+
+    # Stream mode: LLM 호출 스킵, messages만 저장
+    if state and (state.get("metadata") or {}).get("_stream_mode"):
+        state["metadata"]["_llm_messages"] = messages
+        state["metadata"]["_llm_temperature"] = temperature
+        return ""
+
     return await llm.chat_completion(
         messages=messages,
         temperature=temperature,
