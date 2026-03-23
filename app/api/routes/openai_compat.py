@@ -25,7 +25,7 @@ from app.core.langfuse_client import trace_attributes
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-MODEL_ID = "co-scientist"
+MODEL_ID = "co-scientist-bk03"
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -66,7 +66,7 @@ async def list_models():
                 "id": MODEL_ID,
                 "object": "model",
                 "created": 1700000000,
-                "owned_by": "co-scientist",
+                "owned_by": "co-scientist-bk03",
             }
         ],
     }
