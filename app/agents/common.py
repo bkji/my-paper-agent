@@ -12,17 +12,25 @@ logger = logging.getLogger(__name__)
 
 
 def inject_date_context(system_prompt: str, state: dict | None = None) -> str:
-    """시스템 프롬프트에 현재 서버 날짜/시간 정보를 주입한다.
+    """시스템 프롬프트에 현재 서버 날짜/시간 및 대화 히스토리를 주입한다.
 
     state에 metadata.date_context가 있으면 그것을 사용하고,
     없으면 서버 시간에서 직접 생성한다.
     """
     date_ctx = None
+    conversation_history = None
     if state:
-        date_ctx = (state.get("metadata") or {}).get("date_context")
+        metadata = state.get("metadata") or {}
+        date_ctx = metadata.get("date_context")
+        conversation_history = metadata.get("conversation_history")
     if not date_ctx:
         date_ctx = get_current_date_context()
-    return f"[Server Time Info]\n{date_ctx}\n\n{system_prompt}"
+
+    parts = [f"[Server Time Info]\n{date_ctx}"]
+    if conversation_history:
+        parts.append(f"[Previous Conversation]\n{conversation_history}")
+    parts.append(system_prompt)
+    return "\n\n".join(parts)
 
 
 def format_context(search_results: list[dict]) -> str:

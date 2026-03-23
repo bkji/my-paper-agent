@@ -76,9 +76,15 @@ async def list_models():
 async def chat_completions(request: OAIRequest):
     query = ""
     system_ctx = ""
+    chat_history: list[dict] = []
+
     for msg in request.messages:
         if msg.role == "system":
             system_ctx = msg.content
+        elif msg.role in ("user", "assistant"):
+            chat_history.append({"role": msg.role, "content": msg.content})
+
+    # 마지막 user 메시지를 query로 사용
     for msg in reversed(request.messages):
         if msg.role == "user":
             query = msg.content
@@ -90,12 +96,24 @@ async def chat_completions(request: OAIRequest):
     if not query:
         return _make_response("질문을 입력해 주세요.", request.model)
 
+    # 멀티턴: 이전 대화 히스토리를 컨텍스트로 포함
+    conversation_context = ""
+    if len(chat_history) > 1:
+        prev_turns = chat_history[:-1]  # 마지막(현재 질문) 제외
+        lines = []
+        for turn in prev_turns[-10:]:  # 최근 10턴까지만
+            role_label = "사용자" if turn["role"] == "user" else "어시스턴트"
+            lines.append(f"{role_label}: {turn['content']}")
+        conversation_context = "\n".join(lines)
+
     state = {
         "query": query,
         "user_id": "openwebui",
         "filters": {},
         "metadata": {},
     }
+    if conversation_context:
+        state["metadata"]["conversation_history"] = conversation_context
 
     with trace_attributes(user_id="openwebui", metadata={"source": "openai_compat"}):
         result = await supervisor.ainvoke(state)
