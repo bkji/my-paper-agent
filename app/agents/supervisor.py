@@ -199,6 +199,126 @@ async def extract_dates(state: AgentState) -> AgentState:
     return state
 
 
+EXTRACT_CONDITIONS_PROMPT = """You are a query condition extractor for a paper database.
+Extract ALL search conditions from the user's query.
+Current server date: {current_date}
+
+Return ONLY valid JSON:
+{{
+  "coverdate_from": "YYYYMMDD or null",
+  "coverdate_to": "YYYYMMDD or null",
+  "keyword": "search keyword or null",
+  "author": "author name or null",
+  "doi": "DOI string or null",
+  "volume": volume_number_or_null,
+  "issue": issue_number_or_null
+}}
+
+## Rules:
+- Dates: Convert to YYYYMMDD format. "2024년 10월~12월" → from=20241001, to=20241231
+- Relative dates: "최근 5년" from current date, "작년" = previous year
+- keyword: Technical search term only (e.g. "OLED", "Micro LED", "holographic"). NOT "논문", "분석", "경향".
+- doi: Extract if DOI pattern exists (e.g. "10.1002/jsid.2003")
+- volume/issue: Extract numbers if mentioned
+- Set null for fields not mentioned in the query
+
+## Examples:
+"2024년 10월~12월 논문 경향분석해줘" → {{"coverdate_from": "20241001", "coverdate_to": "20241231", "keyword": null, "author": null, "doi": null, "volume": null, "issue": null}}
+"최근 3년 OLED 관련 논문" → {{"coverdate_from": "{three_years_ago}0101", "coverdate_to": "{current_date}", "keyword": "OLED", "author": null, "doi": null, "volume": null, "issue": null}}
+"volume 32 issue 10 논문 보여줘" → {{"coverdate_from": null, "coverdate_to": null, "keyword": null, "author": null, "doi": null, "volume": 32, "issue": 10}}
+"10.1002/jsid.2003 논문 정리해줘" → {{"coverdate_from": null, "coverdate_to": null, "keyword": null, "author": null, "doi": "10.1002/jsid.2003", "volume": null, "issue": null}}"""
+
+
+@observe(name="supervisor_extract_conditions")
+async def extract_conditions(state: AgentState) -> AgentState:
+    """LLM을 사용하여 쿼리에서 날짜, 키워드, 저자, DOI 등 모든 검색 조건을 추출한다.
+
+    regex 날짜 파싱 → LLM 보완 순서로 동작:
+    1. regex로 날짜 추출 (빠르고 정확)
+    2. LLM으로 추가 조건 추출 (키워드, 저자, DOI, volume, issue)
+    3. regex가 날짜를 못 잡으면 LLM 결과로 보완
+    """
+    query = state.get("query", "")
+    filters = state.get("filters") or {}
+    metadata = state.get("metadata") or {}
+
+    now = datetime.now()
+    current_date = now.strftime("%Y%m%d")
+
+    # LLM으로 모든 조건 추출
+    try:
+        prompt = EXTRACT_CONDITIONS_PROMPT.format(
+            current_date=current_date,
+            three_years_ago=str(now.year - 3),
+        )
+        result = await llm_json_call(
+            system_prompt=prompt,
+            user_prompt=query,
+            trace_name="extract_conditions",
+            user_id=state.get("user_id"),
+            temperature=0.1,
+            state=state,
+        )
+
+        # 날짜: regex 결과가 없을 때만 LLM 결과 사용
+        if "coverdate_from" not in filters:
+            cd_from = result.get("coverdate_from")
+            if cd_from and str(cd_from).lower() not in ("null", "none", ""):
+                try:
+                    filters["coverdate_from"] = int(str(cd_from).replace("-", ""))
+                except (ValueError, TypeError):
+                    pass
+        if "coverdate_to" not in filters:
+            cd_to = result.get("coverdate_to")
+            if cd_to and str(cd_to).lower() not in ("null", "none", ""):
+                try:
+                    filters["coverdate_to"] = int(str(cd_to).replace("-", ""))
+                except (ValueError, TypeError):
+                    pass
+
+        # 키워드
+        kw = result.get("keyword")
+        if kw and str(kw).lower() not in ("null", "none", ""):
+            metadata["analytics_keyword"] = kw
+
+        # 저자
+        author = result.get("author")
+        if author and str(author).lower() not in ("null", "none", ""):
+            metadata["analytics_author"] = author
+
+        # DOI
+        doi = result.get("doi")
+        if doi and str(doi).lower() not in ("null", "none", ""):
+            if "doi" not in filters:
+                filters["doi"] = str(doi)
+
+        # Volume/Issue
+        vol = result.get("volume")
+        if vol is not None and str(vol).lower() not in ("null", "none", ""):
+            try:
+                metadata["analytics_volume"] = int(vol)
+            except (ValueError, TypeError):
+                pass
+        iss = result.get("issue")
+        if iss is not None and str(iss).lower() not in ("null", "none", ""):
+            try:
+                metadata["analytics_issue"] = int(iss)
+            except (ValueError, TypeError):
+                pass
+
+        logger.info("[Supervisor] LLM conditions: dates=%s~%s, kw=%s, doi=%s, vol=%s, iss=%s",
+                    filters.get("coverdate_from"), filters.get("coverdate_to"),
+                    metadata.get("analytics_keyword"), filters.get("doi"),
+                    metadata.get("analytics_volume"), metadata.get("analytics_issue"))
+
+    except Exception as e:
+        logger.warning("[Supervisor] LLM condition extraction failed: %s", e)
+
+    state["filters"] = filters if filters else None
+    state["metadata"] = metadata
+    return state
+
+
 @observe(name="supervisor_classify")
 async def classify_intent(state: AgentState) -> AgentState:
     """사용자 쿼리의 의도를 분류하여 적절한 agent_type을 결정한다."""
@@ -275,15 +395,23 @@ async def route_to_agent(state: AgentState) -> AgentState:
 def build_supervisor() -> StateGraph:
     """Supervisor agent graph를 구성한다.
 
-    흐름: extract_dates → classify_intent → route_to_agent → append_citation
+    흐름: extract_dates → extract_conditions → classify_intent → route_to_agent → append_citation
+
+    - extract_dates: regex 기반 빠른 날짜 추출
+    - extract_conditions: LLM 기반 추가 조건 추출 (키워드, 저자, DOI, volume, issue + 날짜 보완)
+    - classify_intent: LLM 기반 의도 분류
+    - route_to_agent: 해당 에이전트 실행
+    - append_citation: 참조 문헌 + 저작권 고지
     """
     graph = StateGraph(AgentState)
     graph.add_node("extract_dates", extract_dates)
+    graph.add_node("extract_conditions", extract_conditions)
     graph.add_node("classify_intent", classify_intent)
     graph.add_node("route_to_agent", route_to_agent)
     graph.add_node("append_citation", append_citation)
     graph.set_entry_point("extract_dates")
-    graph.add_edge("extract_dates", "classify_intent")
+    graph.add_edge("extract_dates", "extract_conditions")
+    graph.add_edge("extract_conditions", "classify_intent")
     graph.add_edge("classify_intent", "route_to_agent")
     graph.add_edge("route_to_agent", "append_citation")
     graph.add_edge("append_citation", END)

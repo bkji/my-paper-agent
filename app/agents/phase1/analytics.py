@@ -105,7 +105,9 @@ async def classify_analytics_type(state: AgentState) -> AgentState:
 
         keyword = result.get("keyword")
         if keyword and keyword.lower() not in ("null", "none", ""):
-            metadata["analytics_keyword"] = keyword
+            # supervisor에서 이미 추출한 keyword가 없을 때만 설정
+            if "analytics_keyword" not in metadata:
+                metadata["analytics_keyword"] = keyword
 
         group_by = result.get("group_by", "month")
         if group_by not in ("month", "year", "quarter"):

@@ -38,6 +38,30 @@ def extract_date_filters(query: str, reference_date: datetime | None = None) -> 
         y1, y2 = int(m.group(1)), int(m.group(2))
         return {"coverdate_from": y1 * 10000 + 101, "coverdate_to": y2 * 10000 + 1231}
 
+    # D1-range: 같은 연도 월 범위 "2024년 10월 ~ 12월", "2024년 3월~8월"
+    m = re.search(r'(\d{4})년\s*(\d{1,2})월\s*[~\-–]\s*(\d{1,2})월', query)
+    if m:
+        year, m1, m2 = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if 1 <= m1 <= 12 and 1 <= m2 <= 12:
+            if m1 > m2:
+                m1, m2 = m2, m1
+            last_day = calendar.monthrange(year, m2)[1]
+            return {
+                "coverdate_from": year * 10000 + m1 * 100 + 1,
+                "coverdate_to": year * 10000 + m2 * 100 + last_day,
+            }
+
+    # D1-cross: 다른 연도 월 범위 "2024년 10월 ~ 2025년 3월"
+    m = re.search(r'(\d{4})년\s*(\d{1,2})월\s*[~\-–]\s*(\d{4})년\s*(\d{1,2})월', query)
+    if m:
+        y1, m1, y2, m2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+        if 1 <= m1 <= 12 and 1 <= m2 <= 12:
+            last_day = calendar.monthrange(y2, m2)[1]
+            return {
+                "coverdate_from": y1 * 10000 + m1 * 100 + 1,
+                "coverdate_to": y2 * 10000 + m2 * 100 + last_day,
+            }
+
     # D1: 절대 연월 "2024년 11월"
     m = re.search(r'(\d{4})년\s*(\d{1,2})월', query)
     if m:
