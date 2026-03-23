@@ -142,6 +142,14 @@ async def extract_dates(state: AgentState) -> AgentState:
     server_time = get_current_datetime()
 
     date_filters = extract_date_filters(query, reference_date=now)
+
+    # 멀티턴: 현재 쿼리에서 날짜를 못 찾으면 대화 히스토리에서 추출 시도
+    if not date_filters:
+        conversation_history = (state.get("metadata") or {}).get("conversation_history", "")
+        if conversation_history:
+            date_filters = extract_date_filters(conversation_history, reference_date=now)
+            if date_filters:
+                logger.info("[Supervisor] date extracted from conversation history: %s", date_filters)
     if date_filters:
         if "coverdate_from" not in filters:
             filters["coverdate_from"] = date_filters["coverdate_from"]
@@ -180,10 +188,17 @@ async def classify_intent(state: AgentState) -> AgentState:
         return state
 
     query = state.get("query", "")
+
+    # 멀티턴: 대화 히스토리가 있으면 쿼리에 컨텍스트 추가
+    conversation_history = (state.get("metadata") or {}).get("conversation_history", "")
+    intent_query = query
+    if conversation_history:
+        intent_query = f"[이전 대화]\n{conversation_history}\n\n[현재 질문]\n{query}"
+
     try:
         result = await llm_json_call(
             system_prompt=INTENT_SYSTEM_PROMPT,
-            user_prompt=query,
+            user_prompt=intent_query,
             trace_name="classify_intent",
             user_id=state.get("user_id"),
             temperature=0.1,

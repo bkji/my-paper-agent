@@ -52,11 +52,14 @@ async def classify_analytics_type(state: AgentState) -> AgentState:
     list_keywords = ["목록", "리스트", "list", "보여줘", "찾아줘", "어떤 논문", "논문 제목"]
 
     is_agg = any(kw in q_lower for kw in agg_keywords)
-    is_list = any(kw in q_lower for kw in list_keywords) and not is_agg
+    is_list = any(kw in q_lower for kw in list_keywords)
 
     metadata = state.get("metadata") or {}
 
-    if is_agg:
+    if is_agg and is_list:
+        # 편수 + 제목/목록 동시 요청 → 목록으로 처리 (편수는 목록 건수로 자연스럽게 표시)
+        metadata["analytics_type"] = "list"
+    elif is_agg:
         metadata["analytics_type"] = "aggregate"
         # group_by 판단
         if "월별" in query or "monthly" in q_lower:
@@ -70,16 +73,17 @@ async def classify_analytics_type(state: AgentState) -> AgentState:
     else:
         metadata["analytics_type"] = "list"
 
-    # 키워드 추출 (날짜/집계 표현 + 조사/어미 + 비검색어 제거 후 핵심 키워드만 남김)
+    # 키워드 추출 (날짜/집계 표현 + 조사/어미 + 비검색어 + 지시어/접미사 제거)
     import re
     cleaned = re.sub(
         r'\d{4}년?\s*\d{0,2}월?|\d{4}\s*[~\-]\s*\d{4}년?|최근\s*\d+\s*(개월|년)|'
         r'올해|작년|금년|지난해|지난달|상반기|하반기|\d분기|'
         r'월별|연도별|분기별|연간|편수|건수|통계|추이|그래프|graph|'
         r'목록|리스트|list|논문|관련|관한|대한|전체|전부|모든|'
-        r'제목|저자|키워드|날짜|기간|분야|'
+        r'제목|저자|키워드|날짜|기간|분야|결과|내용|정보|데이터|'
         r'보여줘|알려줘|찾아줘|분석해줘|나타내줘|있는지|있어\?|해줘|좀|주세요|줘|'
-        r'을|를|이|가|은|는|에|의|로|으로|에서|까지|부터|별|간|와|과|도|만|좀|및|어떤',
+        r'을|를|이|가|은|는|에|의|로|으로|에서|까지|부터|별|간|와|과|도|만|좀|및|어떤|'
+        r'그|이|저|것|들|거|좀|다시|위|아래|해당|각각|각|몇|어느',
         '', query
     ).strip()
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
