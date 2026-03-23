@@ -1,5 +1,6 @@
 """
 MariaDB paper.sid_v_09_01 데이터를 Milvus m_paper.m_sid_v_09_01 컬렉션에 적재하는 스크립트
+- paper_text를 chunk_size/chunk_overlap으로 분할하여 적재
 - paper_text → bge-m3 임베딩 (LM Studio API)
 - bm25_keywords → BM25 sparse vector (Milvus built-in function)
 - embedding_model_id 필드 추가
@@ -38,6 +39,50 @@ EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "http://localhost:20020/v1"
 EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "lm-studio")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-bge-m3")
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))
+
+# Chunking
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "2000"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
+
+
+def chunk_text(text, chunk_size=None, chunk_overlap=None):
+    """텍스트를 chunk_size 단위로 분할한다."""
+    size = chunk_size or CHUNK_SIZE
+    overlap = chunk_overlap or CHUNK_OVERLAP
+    if len(text) <= size:
+        return [text]
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + size
+        chunks.append(text[start:end])
+        start += size - overlap
+    return chunks
+
+
+def fetch_and_chunk_from_mariadb(chunk_size=None, chunk_overlap=None):
+    """MariaDB에서 데이터를 조회하고 paper_text를 청킹하여 반환한다."""
+    conn = mariadb.connect(**DB_CONFIG, database=MARIA_DATABASE)
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM `{MARIA_TABLE}`")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    print(f"MariaDB에서 {len(rows)}건 조회 완료")
+
+    chunked_rows = []
+    for row in rows:
+        text = str(row["paper_text"] or "")
+        chunks = chunk_text(text, chunk_size, chunk_overlap)
+        for i, chunk in enumerate(chunks):
+            new_row = dict(row)
+            new_row["paper_text"] = chunk
+            new_row["chunk_id"] = i + 1
+            new_row["chunk_total_counts"] = len(chunks)
+            chunked_rows.append(new_row)
+
+    print(f"청킹 완료: {len(rows)}편 → {len(chunked_rows)}건 (chunk_size={chunk_size or CHUNK_SIZE}, overlap={chunk_overlap or CHUNK_OVERLAP})")
+    return chunked_rows
 
 
 def fetch_from_mariadb():
@@ -189,8 +234,8 @@ def create_indexes(collection):
 
 
 def main():
-    # 1. MariaDB에서 데이터 조회
-    rows = fetch_from_mariadb()
+    # 1. MariaDB에서 데이터 조회 + 청킹
+    rows = fetch_and_chunk_from_mariadb(chunk_size=2000, chunk_overlap=200)
 
     # 2. 임베딩 생성
     print("임베딩 생성 중...")
