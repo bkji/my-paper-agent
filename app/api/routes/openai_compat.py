@@ -96,14 +96,18 @@ async def chat_completions(request: OAIRequest):
     if not query:
         return _make_response("질문을 입력해 주세요.", request.model)
 
-    # 멀티턴: 이전 대화 히스토리를 컨텍스트로 포함
+    # 멀티턴: 이전 대화 히스토리를 컨텍스트로 포함 (토큰 절약을 위해 요약)
     conversation_context = ""
     if len(chat_history) > 1:
         prev_turns = chat_history[:-1]  # 마지막(현재 질문) 제외
         lines = []
-        for turn in prev_turns[-10:]:  # 최근 10턴까지만
+        for turn in prev_turns[-6:]:  # 최근 6턴까지만
             role_label = "사용자" if turn["role"] == "user" else "어시스턴트"
-            lines.append(f"{role_label}: {turn['content']}")
+            content = turn["content"]
+            # 어시스턴트 응답은 300자로 제한 (토큰 절약)
+            if turn["role"] == "assistant" and len(content) > 300:
+                content = content[:300] + "..."
+            lines.append(f"{role_label}: {content}")
         conversation_context = "\n".join(lines)
 
     state = {

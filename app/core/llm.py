@@ -48,26 +48,35 @@ async def chat_completion(
         "max_tokens": max_tokens,
     }
 
-    response = await client.post("/chat/completions", json=payload)
-    response.raise_for_status()
-    data = response.json()
+    try:
+        response = await client.post("/chat/completions", json=payload)
+        response.raise_for_status()
+        data = response.json()
 
-    result = data["choices"][0]["message"]["content"]
-    usage = data.get("usage", {})
+        result = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {})
 
-    langfuse_context(
-        output={"response": result[:500]},
-        metadata={
-            "model": settings.LLM_MODEL,
-            "prompt_tokens": str(usage.get("prompt_tokens", "")),
-            "completion_tokens": str(usage.get("completion_tokens", "")),
-        },
-    )
-    logger.info(
-        "chat_completion done: prompt_tokens=%s, completion_tokens=%s",
-        usage.get("prompt_tokens"), usage.get("completion_tokens"),
-    )
-    return result
+        langfuse_context(
+            output={"response": result[:500]},
+            metadata={
+                "model": settings.LLM_MODEL,
+                "prompt_tokens": str(usage.get("prompt_tokens", "")),
+                "completion_tokens": str(usage.get("completion_tokens", "")),
+            },
+        )
+        logger.info(
+            "chat_completion done: prompt_tokens=%s, completion_tokens=%s",
+            usage.get("prompt_tokens"), usage.get("completion_tokens"),
+        )
+        return result
+    except httpx.HTTPStatusError as e:
+        logger.error("LLM HTTP error: %s, body: %s", e.response.status_code, e.response.text[:500])
+        langfuse_context(output={"error": str(e), "status_code": e.response.status_code})
+        raise
+    except Exception as e:
+        logger.error("LLM call failed: %s", e)
+        langfuse_context(output={"error": str(e)})
+        raise
 
 
 @observe(as_type="generation", name="llm_chat_completion_stream")

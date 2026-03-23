@@ -59,6 +59,11 @@ async def generate(state: AgentState) -> AgentState:
         state["sources"] = []
         return state
 
+    # 컨텍스트가 너무 길면 잘라냄 (LLM context window 보호)
+    max_context_chars = 6000
+    if len(context) > max_context_chars:
+        context = context[:max_context_chars] + "\n\n... (truncated)"
+
     messages = [
         {"role": "system", "content": inject_date_context(SYSTEM_PROMPT, state)},
         {"role": "user", "content": CONTEXT_TEMPLATE.format(context=context, query=query)},
