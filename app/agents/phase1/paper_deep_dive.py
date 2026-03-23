@@ -101,6 +101,11 @@ async def analyze(state: AgentState) -> AgentState:
         state["sources"] = []
         return state
 
+    # 컨텍스트가 너무 길면 잘라냄 (LLM context window 보호)
+    max_context_chars = 12000
+    if len(context) > max_context_chars:
+        context = context[:max_context_chars] + "\n\n... (truncated)"
+
     answer = await llm_text_call(
         system_prompt=ANALYZE_SYSTEM,
         user_prompt=f"User request: {query}\n\n### Paper Content\n\n{context}",

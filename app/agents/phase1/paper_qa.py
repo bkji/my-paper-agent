@@ -115,7 +115,7 @@ async def generate(state: AgentState) -> AgentState:
         return state
 
     # 컨텍스트가 너무 길면 잘라냄 (LLM context window 보호)
-    max_context_chars = 6000
+    max_context_chars = 12000
     if len(context) > max_context_chars:
         context = context[:max_context_chars] + "\n\n... (truncated)"
 
