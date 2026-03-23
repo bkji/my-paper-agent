@@ -244,6 +244,49 @@ async def list_papers(
     return rows
 
 
+@observe(name="db_get_paper_fulltext_by_title")
+async def get_paper_fulltext_by_title(title_query: str, **kwargs) -> dict[str, Any] | None:
+    """제목(부분 일치)으로 논문 원문(전체 텍스트)을 조회한다.
+
+    MariaDB sid_v_09_01에서 chunk_id=1인 원본 행을 반환.
+    paper_text에 전체 원문이 포함되어 있음.
+    """
+    from sqlalchemy import text as sql_text
+
+    logger.info("get_paper_fulltext_by_title: title_query=%s", title_query[:80])
+
+    sql = """
+        SELECT mariadb_id, filename, doi, coverdate, title, paper_keyword,
+               paper_text, volume, issue, totalpage, referencetotal,
+               author, `references`, chunk_id, chunk_total_counts
+        FROM sid_v_09_01
+        WHERE (chunk_id = 1 OR chunk_id IS NULL)
+          AND title LIKE :tq
+        ORDER BY coverdate DESC
+        LIMIT 1
+    """
+
+    with SessionLocal() as db:
+        result = db.execute(sql_text(sql), {"tq": f"%{title_query}%"})
+        row = result.fetchone()
+        if row is None:
+            langfuse_context(output={"found": False})
+            return None
+        paper = {
+            "mariadb_id": row[0], "filename": row[1], "doi": row[2],
+            "coverdate": row[3], "title": row[4], "paper_keyword": row[5],
+            "paper_text": row[6], "volume": row[7], "issue": row[8],
+            "totalpage": row[9], "referencetotal": row[10],
+            "author": row[11], "references": row[12],
+            "chunk_id": row[13], "chunk_total_counts": row[14],
+        }
+
+    langfuse_context(output={"found": True, "title": paper["title"][:100]})
+    logger.info("get_paper_fulltext_by_title: found '%s' (text_len=%d)",
+                paper["title"][:60], len(paper.get("paper_text") or ""))
+    return paper
+
+
 def _paper_to_dict(paper: Paper) -> dict[str, Any]:
     return {
         "id": paper.id,
