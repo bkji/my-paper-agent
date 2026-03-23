@@ -169,35 +169,45 @@ def create_milvus_collection():
     return collection
 
 
-def insert_data(collection, rows, embeddings):
-    data = []
-    for i, row in enumerate(rows):
-        entity = {
-            "mariadb_id": int(row["mariadb_id"]),
-            "filename": str(row["filename"] or ""),
-            "doi": str(row["doi"] or ""),
-            "coverdate": int(row["coverdate"] or 0),
-            "title": str(row["title"] or ""),
-            "paper_keyword": str(row["paper_keyword"] or ""),
-            "paper_text": str(row["paper_text"] or ""),
-            "volume": int(row["volume"] or 0),
-            "issue": int(row["issue"] or 0),
-            "totalpage": int(row["totalpage"] or 0),
-            "referencetotal": int(row["referencetotal"] or 0),
-            "author": str(row["author"] or ""),
-            "references": str(row["references"] or ""),
-            "chunk_id": int(row["chunk_id"] or 0),
-            "chunk_total_counts": int(row["chunk_total_counts"] or 0),
-            "bm25_keywords": str(row["bm25_keywords"] or ""),
-            "parser_ver": str(row["parser_ver"] or ""),
-            "embeddings": embeddings[i],
-            "embedding_model_id": EMBEDDING_MODEL,
-        }
-        data.append(entity)
+def insert_data(collection, rows, embeddings, batch_size=100):
+    """Milvus에 batch 단위로 나누어 INSERT한다 (서버 메시지 크기 제한 대응)."""
+    total = len(rows)
+    inserted = 0
 
-    collection.insert(data)
+    for batch_start in range(0, total, batch_size):
+        batch_end = min(batch_start + batch_size, total)
+        batch_data = []
+        for i in range(batch_start, batch_end):
+            row = rows[i]
+            entity = {
+                "mariadb_id": int(row["mariadb_id"]),
+                "filename": str(row["filename"] or ""),
+                "doi": str(row["doi"] or ""),
+                "coverdate": int(row["coverdate"] or 0),
+                "title": str(row["title"] or ""),
+                "paper_keyword": str(row["paper_keyword"] or ""),
+                "paper_text": str(row["paper_text"] or ""),
+                "volume": int(row["volume"] or 0),
+                "issue": int(row["issue"] or 0),
+                "totalpage": int(row["totalpage"] or 0),
+                "referencetotal": int(row["referencetotal"] or 0),
+                "author": str(row["author"] or ""),
+                "references": str(row["references"] or ""),
+                "chunk_id": int(row["chunk_id"] or 0),
+                "chunk_total_counts": int(row["chunk_total_counts"] or 0),
+                "bm25_keywords": str(row["bm25_keywords"] or ""),
+                "parser_ver": str(row["parser_ver"] or ""),
+                "embeddings": embeddings[i],
+                "embedding_model_id": EMBEDDING_MODEL,
+            }
+            batch_data.append(entity)
+
+        collection.insert(batch_data)
+        inserted += len(batch_data)
+        print(f"  INSERT {inserted}/{total} 완료")
+
     collection.flush()
-    print(f"{len(rows)}건 INSERT 완료")
+    print(f"총 {total}건 INSERT 완료 (batch_size={batch_size})")
 
 
 def create_indexes(collection):
