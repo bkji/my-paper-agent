@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import chat, documents, agents, openai_compat
 from app.core.langfuse_client import init_langfuse, flush_langfuse
@@ -15,6 +16,14 @@ app = FastAPI(
     title="Co-Scientist Agent",
     version="0.2.0",
     description="Display R&D Co-Scientist Agent with date-aware search",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
