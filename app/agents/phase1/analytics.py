@@ -18,7 +18,7 @@ import logging
 from langgraph.graph import StateGraph, END
 
 from app.agents.state import AgentState
-from app.agents.common import inject_date_context, build_sources
+from app.agents.common import inject_date_context, build_sources, llm_json_call
 from app.core import llm, database
 
 logger = logging.getLogger(__name__)
@@ -40,56 +40,69 @@ Add a brief summary at the end.
 Answer in the same language as the user's question."""
 
 
+CLASSIFY_SYSTEM_PROMPT = """You are a query analyzer for a paper database system.
+Analyze the user's query and extract structured parameters for database search.
+Return ONLY valid JSON with these fields:
+
+{
+  "type": "list" or "aggregate",
+  "keyword": "search keyword or null",
+  "group_by": "month" or "year" or "quarter",
+  "author": "author name or null"
+}
+
+## Rules:
+- type: "list" if user wants paper titles/details/목록/제목/보여줘. "aggregate" if user wants only counts/statistics/추이/그래프 without titles.
+- keyword: Extract ONLY the technical/topic keyword for filtering papers (e.g. "OLED", "Micro LED", "holographic"). Set null if no specific topic filter — do NOT include words like "논문", "편수", "제목", "목록".
+- group_by: "month" (default), "year" if 연도별/yearly, "quarter" if 분기별.
+- author: Extract author name if mentioned, otherwise null.
+
+## Examples:
+"2024년 10월 논문 편수와 제목 보여줘" → {"type": "list", "keyword": null, "group_by": "month", "author": null}
+"OLED 관련 논문 목록" → {"type": "list", "keyword": "OLED", "group_by": "month", "author": null}
+"연도별 Micro LED 논문 편수 추이" → {"type": "aggregate", "keyword": "Micro LED", "group_by": "year", "author": null}
+"최근 6개월 논문 몇 편?" → {"type": "aggregate", "keyword": null, "group_by": "month", "author": null}
+"그 논문들 제목도 보여줘" → {"type": "list", "keyword": null, "group_by": "month", "author": null}
+"holographic grating 관련 논문 찾아줘" → {"type": "list", "keyword": "holographic grating", "group_by": "month", "author": null}"""
+
+
 async def classify_analytics_type(state: AgentState) -> AgentState:
-    """질문을 분석하여 집계(aggregate) vs 목록(list) vs 통계분석(analysis) 유형을 판단한다."""
+    """LLM을 사용하여 질문의 analytics 유형, 키워드, group_by를 추출한다."""
     query = state.get("query", "")
-    filters = state.get("filters") or {}
-
-    # 키워드 기반 빠른 판단
-    q_lower = query.lower()
-    agg_keywords = ["편수", "건수", "몇 편", "몇 건", "count", "통계", "추이", "그래프", "graph",
-                    "월별", "연도별", "분기별", "연간", "증감", "변화량"]
-    list_keywords = ["목록", "리스트", "list", "보여줘", "찾아줘", "어떤 논문", "논문 제목"]
-
-    is_agg = any(kw in q_lower for kw in agg_keywords)
-    is_list = any(kw in q_lower for kw in list_keywords)
-
     metadata = state.get("metadata") or {}
 
-    if is_agg and is_list:
-        # 편수 + 제목/목록 동시 요청 → 목록으로 처리 (편수는 목록 건수로 자연스럽게 표시)
-        metadata["analytics_type"] = "list"
-    elif is_agg:
-        metadata["analytics_type"] = "aggregate"
-        # group_by 판단
-        if "월별" in query or "monthly" in q_lower:
-            metadata["group_by"] = "month"
-        elif "분기별" in query or "quarter" in q_lower:
-            metadata["group_by"] = "quarter"
-        elif "연도별" in query or "연간" in query or "yearly" in q_lower:
-            metadata["group_by"] = "year"
-        else:
-            metadata["group_by"] = "month"  # 기본값
-    else:
-        metadata["analytics_type"] = "list"
+    try:
+        result = await llm_json_call(
+            system_prompt=CLASSIFY_SYSTEM_PROMPT,
+            user_prompt=query,
+            trace_name="analytics_classify",
+            user_id=state.get("user_id"),
+            temperature=0.1,
+            state=state,
+        )
 
-    # 키워드 추출 (날짜/집계 표현 + 조사/어미 + 비검색어 + 지시어/접미사 제거)
-    import re
-    cleaned = re.sub(
-        r'\d{4}년?\s*\d{0,2}월?|\d{4}\s*[~\-]\s*\d{4}년?|최근\s*\d+\s*(개월|년)|'
-        r'올해|작년|금년|지난해|지난달|상반기|하반기|\d분기|'
-        r'월별|연도별|분기별|연간|편수|건수|통계|추이|그래프|graph|'
-        r'목록|리스트|list|논문|관련|관한|대한|전체|전부|모든|'
-        r'제목|저자|키워드|날짜|기간|분야|결과|내용|정보|데이터|'
-        r'보여줘|알려줘|찾아줘|분석해줘|나타내줘|있는지|있어\?|해줘|좀|주세요|줘|'
-        r'을|를|이|가|은|는|에|의|로|으로|에서|까지|부터|별|간|와|과|도|만|좀|및|어떤|'
-        r'그|이|저|것|들|거|좀|다시|위|아래|해당|각각|각|몇|어느',
-        '', query
-    ).strip()
-    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    # 2글자 이상의 의미있는 키워드만 사용
-    if cleaned and len(cleaned) >= 2 and not cleaned.isspace():
-        metadata["analytics_keyword"] = cleaned
+        analytics_type = result.get("type", "list")
+        if analytics_type not in ("list", "aggregate"):
+            analytics_type = "list"
+        metadata["analytics_type"] = analytics_type
+
+        keyword = result.get("keyword")
+        if keyword and keyword.lower() not in ("null", "none", ""):
+            metadata["analytics_keyword"] = keyword
+
+        group_by = result.get("group_by", "month")
+        if group_by not in ("month", "year", "quarter"):
+            group_by = "month"
+        metadata["group_by"] = group_by
+
+        author = result.get("author")
+        if author and author.lower() not in ("null", "none", ""):
+            metadata["analytics_author"] = author
+
+    except Exception as e:
+        logger.warning("[Analytics] LLM classify failed: %s, using defaults", e)
+        metadata["analytics_type"] = "list"
+        metadata["group_by"] = "month"
 
     state["metadata"] = metadata
     logger.info("[Analytics] type=%s, group_by=%s, keyword=%s",
@@ -107,7 +120,7 @@ async def fetch_data(state: AgentState) -> AgentState:
 
     coverdate_from = filters.get("coverdate_from")
     coverdate_to = filters.get("coverdate_to")
-    author = filters.get("author")
+    author = filters.get("author") or metadata.get("analytics_author")
 
     if analytics_type == "aggregate":
         group_by = metadata.get("group_by", "month")
