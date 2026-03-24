@@ -17,7 +17,6 @@ class ChatRequest(BaseModel):
     user_id: Optional[str] = None
     filters: Optional[dict] = None
     messages: Optional[list[ChatMessage]] = None
-    conversation_history: Optional[str] = None  # 하위 호환용 (messages 우선)
     stream: Optional[bool] = False
 
 

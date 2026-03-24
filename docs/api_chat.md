@@ -149,20 +149,18 @@ curl -X POST http://localhost:20035/api/chat \
 | `agent_type` | 선택 | `null` | 에이전트 강제 지정 |
 | `user_id` | 선택 | `null` | 트레이싱용 사용자 ID |
 | `filters` | 선택 | `null` | 날짜 필터 직접 지정 |
-| `conversation_history` | 선택 | `null` | 하위 호환용 (messages 우선) |
 | **헤더** `Authorization` | **조건부** | - | `.env`에 API 키 설정 시 필수 |
 
 ### ChatRequest 스키마
 
 ```json
 {
-  "query":                "string         (필수)",
-  "messages":             "[{role, content}] | null  (선택 — 멀티턴용)",
-  "stream":               "boolean        (선택, 기본값: false)",
-  "agent_type":           "string | null  (선택 — 에이전트 강제 지정)",
-  "user_id":              "string | null  (선택 — 트레이싱용)",
-  "filters":              "object | null  (선택 — 날짜 필터 직접 지정)",
-  "conversation_history": "string | null  (선택 — 하위 호환용, messages 우선)"
+  "query":      "string         (필수)",
+  "messages":   "[{role, content}] | null  (선택 — 멀티턴용)",
+  "stream":     "boolean        (선택, 기본값: false)",
+  "agent_type": "string | null  (선택 — 에이전트 강제 지정)",
+  "user_id":    "string | null  (선택 — 트레이싱용)",
+  "filters":    "object | null  (선택 — 날짜 필터 직접 지정)"
 }
 ```
 
@@ -176,7 +174,6 @@ curl -X POST http://localhost:20035/api/chat \
 | `agent_type` | `string` | 선택 | `null` | 에이전트 강제 지정. 생략 시 AI가 자동 분류 |
 | `user_id` | `string` | 선택 | `null` | 사용자 식별자 (Langfuse 트레이싱용) |
 | `filters` | `object` | 선택 | `null` | 날짜/조건 필터 직접 지정 |
-| `conversation_history` | `string` | 선택 | `null` | 하위 호환용. `messages`가 있으면 무시됨 |
 
 ### messages 필드 규칙
 
