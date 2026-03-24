@@ -103,9 +103,27 @@ messages.append({"role": "assistant", "content": 응답2})
 |------|-----|
 | URL | `POST /api/chat` |
 | Content-Type | `application/json` |
-| 인증 | 없음 (내부 서비스용) |
+| 인증 | Bearer token (`.env`의 `OPENAI_COMPAT_API_KEY` — 미설정 시 인증 없음) |
 | 서버 포트 | 20035 (기본값) |
 | 응답 모드 | JSON 일괄 응답 (기본) / SSE 스트리밍 (`stream: true`) |
+
+### 인증
+
+`.env`에 `OPENAI_COMPAT_API_KEY`가 설정되어 있으면 **Bearer 토큰 인증**이 필요합니다.
+미설정이면 인증 없이 접근 가능합니다. `/v1/chat/completions`와 **동일한 키**를 사용합니다.
+
+```bash
+# 인증 키가 설정된 경우
+curl -X POST http://localhost:20035/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer co-sci" \
+  -d '{"query": "OLED 논문 알려줘"}'
+```
+
+인증 실패 시 응답 (HTTP 401):
+```json
+{"detail": "Invalid or missing API key"}
+```
 
 ---
 
@@ -756,7 +774,7 @@ msgs.push({ role: "assistant", content: r2.answer });
 | 항목 | `/api/chat` | `/v1/chat/completions` |
 |------|-------------|----------------------|
 | 프로토콜 | 자체 포맷 | OpenAI-compatible |
-| 인증 | 없음 | Bearer token |
+| 인증 | Bearer token (동일 키) | Bearer token (동일 키) |
 | 멀티턴 | `messages` 배열 | `messages` 배열 |
 | **멀티턴 내부 처리** | **동일 (supervisor.build_history)** | **동일 (supervisor.build_history)** |
 | 스트리밍 | SSE named events (`event: token`) | OpenAI SSE (`data: {choices:[...]}`) |
