@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from app.agents.state import AgentState
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,9 @@ def format_citation_text(sources: list[dict]) -> str:
                     line += f", 저자: {author}"
                 if doi_link:
                     line += f", DOI: {doi_link}"
+                if settings.SHOW_CITATION_SCORE:
+                    score = src.get("score", 0.0)
+                    line += f" (유사도: {score:.4f})"
                 parts.append(line)
 
     parts.append(f"\n\n---\n{DISCLAIMER}")

@@ -62,5 +62,8 @@ class Settings:
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "50"))
     TOP_K: int = int(os.getenv("TOP_K", "5"))
 
+    # --- 참조 문헌 옵션 ---
+    SHOW_CITATION_SCORE: bool = os.getenv("SHOW_CITATION_SCORE", "false").lower() in ("true", "1", "yes")
+
 
 settings = Settings()
