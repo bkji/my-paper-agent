@@ -17,6 +17,23 @@ from dateutil.relativedelta import relativedelta
 logger = logging.getLogger(__name__)
 
 
+def _normalize_short_year(query: str) -> str:
+    """2자리 연도를 4자리로 변환한다.
+
+    규칙: 50 미만 → 2000년대 (25년 → 2025년), 50 이상 → 1900년대 (99년 → 1999년)
+    "25년" → "2025년", "99년" → "1999년", "03년" → "2003년"
+    단, "2024년" 같은 4자리 연도는 건드리지 않는다.
+    """
+    def _replace(m):
+        y = int(m.group(1))
+        full_year = (2000 + y) if y < 50 else (1900 + y)
+        return f"{full_year}년"
+
+    # 4자리 연도 뒤의 "년"은 건드리지 않고, 2자리 연도+"년"만 매칭
+    # (?<!\d) — 앞에 숫자가 없어야 함 (4자리 연도의 뒷부분을 잡지 않기 위해)
+    return re.sub(r'(?<!\d)(\d{2})년', _replace, query)
+
+
 def extract_date_filters(query: str, reference_date: datetime | None = None) -> dict | None:
     """쿼리에서 날짜 표현을 추출하여 coverdate_from/to 필터를 반환한다.
 
@@ -24,6 +41,9 @@ def extract_date_filters(query: str, reference_date: datetime | None = None) -> 
         dict with 'coverdate_from', 'coverdate_to' (YYYYMMDD int) or None
     """
     ref = reference_date or datetime.now()
+
+    # 전처리: 2자리 연도 → 4자리 변환 ("25년" → "2025년")
+    query = _normalize_short_year(query)
 
     # D4: 비교 패턴 (두 연도가 "대비", "비교", "vs", "변화"로 연결)
     m = re.search(r'(\d{4})년?\s*(?:대비|과|와|vs\.?)\s*(\d{4})년', query)
@@ -92,10 +112,12 @@ def extract_date_filters(query: str, reference_date: datetime | None = None) -> 
         else:
             return {"coverdate_from": year * 10000 + 701, "coverdate_to": year * 10000 + 1231}
 
-    # D2: 연도 범위 "2022~2024년"
-    m = re.search(r'(\d{4})\s*[~\-–]\s*(\d{4})년?', query)
+    # D2: 연도 범위 "2022~2024년", "2003년~2005년"
+    m = re.search(r'(\d{4})년?\s*[~\-–]\s*(\d{4})년?', query)
     if m:
         y1, y2 = int(m.group(1)), int(m.group(2))
+        if y1 > y2:
+            y1, y2 = y2, y1
         return {"coverdate_from": y1 * 10000 + 101, "coverdate_to": y2 * 10000 + 1231}
 
     # D3: 최근 N개월 "최근 6개월"
@@ -169,11 +191,11 @@ def extract_date_filters(query: str, reference_date: datetime | None = None) -> 
             "coverdate_to": dt.year * 10000 + dt.month * 100 + last_day,
         }
 
-    # D2: 단독 연도 "2024년" (다른 패턴에 매칭 안 된 경우)
+    # D2: 단독 연도 "2024년", "1999년" (다른 패턴에 매칭 안 된 경우)
     m = re.search(r'(\d{4})년', query)
     if m:
         year = int(m.group(1))
-        if 2000 <= year <= 2099:
+        if 1900 <= year <= 2099:
             return {"coverdate_from": year * 10000 + 101, "coverdate_to": year * 10000 + 1231}
 
     return None
