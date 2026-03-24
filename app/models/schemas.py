@@ -11,6 +11,7 @@ class ChatRequest(BaseModel):
     agent_type: Optional[str] = None
     user_id: Optional[str] = None
     filters: Optional[dict] = None
+    conversation_history: Optional[str] = None
 
 
 class SourceDocument(BaseModel):

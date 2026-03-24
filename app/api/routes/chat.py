@@ -20,6 +20,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
         "filters": request.filters,
         "metadata": {},
     }
+    if request.conversation_history:
+        state["metadata"]["conversation_history"] = request.conversation_history
     if request.agent_type:
         state["metadata"]["agent_type"] = request.agent_type
 
