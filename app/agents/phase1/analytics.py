@@ -14,6 +14,7 @@ Milvus(벡터검색)가 아닌 MariaDB(SQL)를 사용하여:
 from __future__ import annotations
 
 import logging
+import re
 
 from langgraph.graph import StateGraph, END
 
@@ -23,6 +24,20 @@ from app.core import llm, database
 
 logger = logging.getLogger(__name__)
 
+DISPLAY_TECH_CATEGORIES = """## Display Technology Categories (SID/Wiley 분류 기준)
+1. Active-Matrix Devices and Displays
+2. Applied Vision and Human Factors
+3. Backlighting and Solid State Lighting Technologies
+4. Display Electronics
+5. Display Manufacturing Technologies
+6. Display Measurements
+7. Display Systems; Optical and Electronic
+8. Electronic Paper and Flexible Displays
+9. Liquid Crystal and other Non-emissive Displays
+10. Organic Light Emitting Devices and Displays
+11. Plasma and other Emissive Displays
+12. Projection Displays and Systems"""
+
 SYSTEM_PROMPT = """You are a Co-Scientist analytics assistant for display technology researchers.
 You analyze paper statistics and aggregation data from the database.
 
@@ -31,6 +46,15 @@ When presenting data:
 - Include totals and averages where appropriate
 - Highlight notable trends or outliers
 - If asked for a graph/chart, present data in a clear table format with bar indicators (▓)
+
+""" + DISPLAY_TECH_CATEGORIES + """
+
+## 경향/트렌드 분석 규칙:
+- 사용자가 **특정 주제 없이** "경향 분석", "트렌드 분석"을 요청하면, 위 카테고리별로 논문을 분류하여 분석하세요.
+  - 각 논문의 제목/키워드를 기반으로 해당 카테고리에 매핑
+  - 카테고리별 논문 수, 비중(%), 주요 연구 주제를 표로 정리
+  - 해당 기간의 연구 동향 요약
+- 사용자가 **특정 주제**를 언급하면 (예: "OLED 경향 분석"), 해당 주제 논문만 분석하세요.
 
 Answer in the same language as the user's question."""
 
@@ -193,6 +217,37 @@ async def fetch_data(state: AgentState) -> AgentState:
                 bar = "▓" * max(1, int(pct / 5))
                 lines.append(f"| {row['period']} | {row['count']} | {bar} {pct:.1f}% |")
             lines.append(f"\n**총 {total}편**")
+
+            # 경향/트렌드 분석용: 논문 상세 목록도 추가 (카테고리 분류에 필요)
+            query = state.get("query", "")
+            if re.search(r'경향|트렌드|동향|분석', query):
+                detail_data = await database.list_papers(
+                    coverdate_from=coverdate_from, coverdate_to=coverdate_to,
+                    keyword=keyword, author=author, volume=volume, issue=issue, limit=100,
+                )
+                if detail_data:
+                    lines.append("\n## 논문 상세 목록 (카테고리 분류용)\n")
+                    lines.append("| No | 날짜 | 제목 | 키워드 |")
+                    lines.append("|----|------|------|--------|")
+                    for i, row in enumerate(detail_data, 1):
+                        cd = str(row.get("coverdate", ""))
+                        date_str = f"{cd[:4]}-{cd[4:6]}-{cd[6:8]}" if len(cd) == 8 else cd
+                        title = (row.get("title") or "")[:80]
+                        kw = (row.get("paper_keyword") or "")[:60]
+                        lines.append(f"| {i} | {date_str} | {title} | {kw} |")
+                    # sources도 생성 (참조 문헌용)
+                    state["search_results"] = detail_data
+                    state["sources"] = [
+                        {
+                            "paper_id": str(r.get("doi") or r.get("filename", "")),
+                            "title": r.get("title", ""),
+                            "author": r.get("author", ""),
+                            "doi": r.get("doi"),
+                            "chunk_id": 0, "chunk_text": "", "score": 0.0,
+                        }
+                        for r in detail_data[:20]
+                    ]
+
             state["context"] = "\n".join(lines)
         else:
             state["context"] = "해당 조건의 논문이 없습니다."
