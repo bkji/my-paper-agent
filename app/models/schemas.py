@@ -12,6 +12,7 @@ class ChatRequest(BaseModel):
     user_id: Optional[str] = None
     filters: Optional[dict] = None
     conversation_history: Optional[str] = None
+    stream: Optional[bool] = False
 
 
 class SourceDocument(BaseModel):
