@@ -60,7 +60,8 @@ def format_citation_text(sources: list[dict]) -> str:
                     line += f", DOI: {doi_link}"
                 if settings.SHOW_CITATION_SCORE:
                     score = src.get("score", 0.0)
-                    line += f" (유사도: {score:.4f})"
+                    if score > 0:
+                        line += f" (유사도: {score:.4f})"
                 parts.append(line)
 
     parts.append(f"\n\n---\n{DISCLAIMER}")
