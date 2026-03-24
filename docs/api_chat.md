@@ -116,7 +116,7 @@ messages.append({"role": "assistant", "content": 응답2})
 # 인증 키가 설정된 경우
 curl -X POST http://localhost:20035/api/chat \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer co-sci" \
+  -H "Authorization: Bearer <인증키>" \
   -d '{"query": "OLED 논문 알려줘"}'
 ```
 

@@ -243,7 +243,7 @@ curl -X POST http://localhost:20035/api/chat \
 # 인증 키 설정 시 (OPENAI_COMPAT_API_KEY)
 curl -X POST http://localhost:20035/api/chat \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer co-sci" \
+  -H "Authorization: Bearer <인증키>" \
   -d '{"query": "OLED 논문 알려줘"}'
 ```
 
