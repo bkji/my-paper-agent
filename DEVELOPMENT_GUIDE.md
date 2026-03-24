@@ -101,11 +101,13 @@ claude_code/
 │   │       ├── peer_review.py    #   가상 논문 리뷰
 │   │       └── knowledge_connector.py # 전문가 매칭
 │   │
-│   ├── api/routes/               # API 엔드포인트
-│   │   ├── chat.py               # POST /api/chat
-│   │   ├── agents.py             # GET /api/agents
-│   │   ├── documents.py          # POST /api/documents/ingest
-│   │   └── openai_compat.py      # POST /v1/chat/completions
+│   ├── api/                      # API 계층
+│   │   ├── deps.py               # 공통 의존성 (Bearer 토큰 인증)
+│   │   └── routes/               # API 엔드포인트
+│   │       ├── chat.py           # POST /api/chat
+│   │       ├── agents.py         # GET /api/agents
+│   │       ├── documents.py      # POST /api/documents/ingest
+│   │       └── openai_compat.py  # POST /v1/chat/completions
 │   │
 │   ├── models/                   # 데이터 모델
 │   │   ├── db_models.py          # SQLAlchemy ORM
@@ -174,11 +176,20 @@ LANGFUSE_SECRET_KEY=your-secret-key
 LANGFUSE_PUBLIC_KEY=your-public-key
 LANGFUSE_HOST=http://localhost:20025
 
+# --- OpenAI-compatible API 키 (Open WebUI 연동, 빈값이면 인증 비활성화) ---
+# /api/chat과 /v1/chat/completions 모두 동일한 키로 인증
+# 폐쇄망에서는 빈값 권장 (외부 접근 없음)
+OPENAI_COMPAT_API_KEY=
+# 로컬 환경 예시:
+# OPENAI_COMPAT_API_KEY=co-sci
+
 # --- RAG ---
 CHUNK_SIZE=512
 CHUNK_OVERLAP=50
 TOP_K=5
 ```
+
+**인증:** `OPENAI_COMPAT_API_KEY`가 설정되면 `/api/chat`, `/v1/models`, `/v1/chat/completions` 모두 Bearer 토큰 인증을 요구합니다. 빈값이면 인증 없이 접근 가능합니다. 인증 로직은 `app/api/deps.py`에서 통합 관리됩니다.
 
 **폐쇄망 전환 시:** `.env`의 `LLM_BASE_URL`, `EMBEDDING_BASE_URL`만 변경하면 됩니다. 코드 수정 불필요.
 
@@ -360,8 +371,9 @@ D:/WPy64-312101_paper/python/python.exe scripts/evaluate_agents.py
 5. `EMBEDDING_MODEL` → `bge-m3`
 6. MariaDB, Milvus 접속정보 변경
 7. Langfuse 접속정보 변경
-8. `pip install -r requirements.txt` 실행
-9. 데이터 적재 (`load_csv_to_mariadb.py` → `load_mariadb_to_milvus.py`)
-10. FastAPI 서버 시작
+8. `OPENAI_COMPAT_API_KEY=` (빈값) — 폐쇄망에서는 API 인증 비활성화 권장
+9. `pip install -r requirements.txt` 실행
+10. 데이터 적재 (`load_csv_to_mariadb.py` → `load_mariadb_to_milvus.py`)
+11. FastAPI 서버 시작
 
 **코드 수정은 불필요합니다.** `.env`만 변경하면 됩니다.
