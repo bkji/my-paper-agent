@@ -6,7 +6,7 @@ import logging
 from langgraph.graph import StateGraph, END
 
 from app.agents.state import AgentState
-from app.agents.common import retrieve_by_query, format_context, build_sources, inject_date_context, llm_json_call
+from app.agents.common import retrieve_by_query, format_context, build_sources, inject_date_context, llm_json_call, extract_paper_title_from_history
 from app.core import llm, database
 
 logger = logging.getLogger(__name__)
@@ -30,14 +30,26 @@ CONTEXT_TEMPLATE = """### Retrieved Paper Excerpts
 - If information is insufficient, state what is missing."""
 
 
-TITLE_EXTRACT_PROMPT = """Extract the paper title keyword from the user's query if they are asking about a specific paper.
+TITLE_EXTRACT_PROMPT = """Extract the paper title keyword from the user's query.
+If the current query does not mention a specific paper title, check the conversation history
+to find which paper the user is referring to (e.g. "이 논문", "논문의", "위 논문", "그 논문").
+
 Return ONLY JSON: {"title_keyword": "<keyword or null>"}
 
 Examples:
 "Subjective assessment of visual fidelity 논문 요약해줘" → {"title_keyword": "Subjective assessment of visual fidelity"}
 "holographic grating 논문에 대해 알려줘" → {"title_keyword": "holographic grating"}
 "Micro LED 결함 검출 방법은?" → {"title_keyword": null}
-"최근 OLED 연구 동향은?" → {"title_keyword": null}"""
+"최근 OLED 연구 동향은?" → {"title_keyword": null}
+
+With conversation history:
+[Previous] User: "Subjective assessment of visual fidelity 논문 상세 설명해줘" / Assistant: "이 논문은..."
+[Current] "논문의 2.1 부분 번역해줘"
+→ {"title_keyword": "Subjective assessment of visual fidelity"}
+
+[Previous] User: "High-speed inspection 논문 분석해줘" / Assistant: "..."
+[Current] "이 논문의 결론 부분 요약해줘"
+→ {"title_keyword": "High-speed inspection"}"""
 
 
 async def retrieve(state: AgentState) -> AgentState:
@@ -65,9 +77,15 @@ async def retrieve(state: AgentState) -> AgentState:
 
     # 특정 논문 제목이 언급된 경우 MariaDB에서 원문 조회 시도
     try:
+        # 대화 히스토리가 있으면 제목 추출에 포함 (이전 턴의 논문 참조 해결)
+        conversation_history = (state.get("metadata") or {}).get("conversation_history", "")
+        title_query = query
+        if conversation_history:
+            title_query = f"[Previous conversation]\n{conversation_history}\n\n[Current query]\n{query}"
+
         title_result = await llm_json_call(
             system_prompt=TITLE_EXTRACT_PROMPT,
-            user_prompt=query,
+            user_prompt=title_query,
             trace_name="paper_qa_extract_title",
             user_id=user_id,
             temperature=0.1,
@@ -89,9 +107,26 @@ async def retrieve(state: AgentState) -> AgentState:
                 )
                 return state
     except Exception as e:
-        logger.warning("[PaperQA] title extraction failed: %s, falling back to Milvus", e)
+        logger.warning("[PaperQA] title extraction failed: %s", e)
 
-    # Fallback: Milvus 벡터 검색
+    # Fallback 1: 규칙 기반 — 대화 히스토리에서 이전 턴의 논문 제목 추출
+    history_title = extract_paper_title_from_history(state)
+    if history_title:
+        paper = await database.get_paper_fulltext_by_title(history_title)
+        if paper:
+            logger.info("[PaperQA] found paper from history title: '%s'", paper["title"][:60])
+            state["search_results"] = [paper]
+            state["context"] = (
+                f"[1] Title: {paper.get('title', '')}\n"
+                f"    Author: {paper.get('author', '')}\n"
+                f"    DOI: {paper.get('doi', '')}\n"
+                f"    Date: {paper.get('coverdate', '')}\n"
+                f"    Keywords: {paper.get('paper_keyword', '')}\n"
+                f"    Full Text:\n    {paper.get('paper_text', '')}\n"
+            )
+            return state
+
+    # Fallback 2: Milvus 벡터 검색
     search_results = await retrieve_by_query(query, user_id=user_id, filters=filters)
     context = format_context(search_results)
 

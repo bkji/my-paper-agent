@@ -108,8 +108,8 @@ def _build_state(request: OAIRequest) -> dict:
         for turn in prev_turns[-6:]:
             role_label = "사용자" if turn["role"] == "user" else "어시스턴트"
             content = turn["content"]
-            if turn["role"] == "assistant" and len(content) > 300:
-                content = content[:300] + "..."
+            if turn["role"] == "assistant" and len(content) > 500:
+                content = content[:500] + "..."
             lines.append(f"{role_label}: {content}")
         conversation_context = "\n".join(lines)
 

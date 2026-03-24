@@ -3,12 +3,58 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from app.config import settings
 from app.core import embeddings, vectorstore, llm
 from app.core.tools import get_current_date_context
 
 logger = logging.getLogger(__name__)
+
+
+def extract_paper_title_from_history(state: dict) -> str | None:
+    """대화 히스토리에서 이전 턴에 참조된 논문 제목을 추출한다.
+
+    "논문의 2.1 부분 번역해줘" 같은 현재 쿼리에서 제목 없이 논문을 참조할 때,
+    이전 사용자 메시지에서 가장 최근 논문 제목을 찾는다.
+
+    Returns:
+        논문 제목 키워드 (str) or None
+    """
+    query = state.get("query", "")
+    # 현재 쿼리에 이미 긴 영문 제목이 있으면 히스토리 탐색 불필요
+    if re.search(r'[A-Za-z]{3,}\s+[A-Za-z]{3,}\s+[A-Za-z]{3,}.*논문', query):
+        return None
+
+    # 현재 쿼리가 "논문의", "이 논문", "그 논문", "위 논문" 등 논문 참조 표현을 포함하는지 확인
+    if not re.search(r'논문의|이\s*논문|그\s*논문|위\s*논문|해당\s*논문|같은\s*논문', query):
+        return None
+
+    conversation_history = (state.get("metadata") or {}).get("conversation_history", "")
+    if not conversation_history:
+        return None
+
+    # 히스토리에서 사용자 메시지를 역순으로 탐색하여 가장 최근 논문 제목 찾기
+    # 패턴: "영문 제목... 논문" 형태
+    user_msgs = re.findall(r'사용자:\s*(.+)', conversation_history)
+    for msg in reversed(user_msgs):
+        # 긴 영문 구문 + "논문" 패턴 (논문 제목으로 추정)
+        m = re.search(r'([A-Za-z][\w\s\-:,()]{10,}?)\s*논문', msg)
+        if m:
+            title = m.group(1).strip()
+            logger.info("[Common] extracted paper title from history: '%s'", title[:60])
+            return title
+
+    # 어시스턴트 응답에서 제목 찾기 (제목: xxx 또는 **Title** 패턴)
+    assistant_msgs = re.findall(r'어시스턴트:\s*(.+)', conversation_history)
+    for msg in reversed(assistant_msgs):
+        m = re.search(r'(?:제목|Title)[:\s]*([A-Za-z][\w\s\-:,()]{10,}?)(?:\s*[,\n|])', msg)
+        if m:
+            title = m.group(1).strip()
+            logger.info("[Common] extracted paper title from assistant response: '%s'", title[:60])
+            return title
+
+    return None
 
 
 def inject_date_context(system_prompt: str, state: dict | None = None) -> str:
