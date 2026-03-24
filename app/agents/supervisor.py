@@ -24,6 +24,72 @@ from app.agents.citation_agent import append_citation
 
 logger = logging.getLogger(__name__)
 
+# ── 대화 히스토리 조립 (messages → conversation_history) ──
+MAX_HISTORY_TURNS = 10  # 최근 5턴 분량 (user + assistant = 10 항목)
+ASSISTANT_COMPRESS_THRESHOLD = 800  # 이 길이 초과 시 앞뒤 400자로 압축
+ASSISTANT_COMPRESS_HEAD = 400
+ASSISTANT_COMPRESS_TAIL = 400
+
+
+def build_conversation_history_from_messages(messages: list[dict]) -> str:
+    """messages 배열 → conversation_history 문자열로 변환한다.
+
+    - 마지막 user 메시지는 제외 (query에 별도 전달)
+    - 어시스턴트 응답이 길면 앞뒤만 남기고 압축
+    - 최근 5턴(10항목)만 유지
+    """
+    if not messages or len(messages) < 2:
+        return ""
+
+    # 마지막 user 메시지 제외
+    prev_turns = []
+    for msg in messages:
+        if msg.get("role") in ("user", "assistant"):
+            prev_turns.append(msg)
+    if prev_turns and prev_turns[-1].get("role") == "user":
+        prev_turns = prev_turns[:-1]
+
+    if not prev_turns:
+        return ""
+
+    # 최근 N개만 유지
+    prev_turns = prev_turns[-MAX_HISTORY_TURNS:]
+
+    lines = []
+    for turn in prev_turns:
+        role_label = "사용자" if turn["role"] == "user" else "어시스턴트"
+        content = turn.get("content", "")
+        if turn["role"] == "assistant" and len(content) > ASSISTANT_COMPRESS_THRESHOLD:
+            content = (
+                content[:ASSISTANT_COMPRESS_HEAD]
+                + "\n...(중략)...\n"
+                + content[-ASSISTANT_COMPRESS_TAIL:]
+            )
+        lines.append(f"{role_label}: {content}")
+
+    return "\n".join(lines)
+
+
+@observe(name="supervisor_build_history")
+async def build_history(state: AgentState) -> AgentState:
+    """messages 배열이 있으면 conversation_history 문자열로 변환한다.
+
+    우선순위: metadata.messages > metadata.conversation_history (하위 호환)
+    """
+    metadata = state.get("metadata") or {}
+
+    raw_messages = metadata.get("messages")
+    if raw_messages:
+        history_str = build_conversation_history_from_messages(raw_messages)
+        if history_str:
+            metadata["conversation_history"] = history_str
+            state["metadata"] = metadata
+            logger.info("[Supervisor] built conversation_history from %d messages (%d chars)",
+                        len(raw_messages), len(history_str))
+
+    return state
+
+
 AGENT_REGISTRY: dict[str, dict[str, Any]] = {
     # Phase 1
     "paper_qa": {
@@ -416,12 +482,14 @@ def build_supervisor() -> StateGraph:
     - append_citation: 참조 문헌 + 저작권 고지
     """
     graph = StateGraph(AgentState)
+    graph.add_node("build_history", build_history)
     graph.add_node("extract_dates", extract_dates)
     graph.add_node("extract_conditions", extract_conditions)
     graph.add_node("classify_intent", classify_intent)
     graph.add_node("route_to_agent", route_to_agent)
     graph.add_node("append_citation", append_citation)
-    graph.set_entry_point("extract_dates")
+    graph.set_entry_point("build_history")
+    graph.add_edge("build_history", "extract_dates")
     graph.add_edge("extract_dates", "extract_conditions")
     graph.add_edge("extract_conditions", "classify_intent")
     graph.add_edge("classify_intent", "route_to_agent")

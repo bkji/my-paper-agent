@@ -25,7 +25,11 @@ def _build_state(request: ChatRequest) -> dict:
         "filters": request.filters,
         "metadata": {},
     }
-    if request.conversation_history:
+    # messages 배열 우선 → supervisor.build_history에서 conversation_history로 변환
+    if request.messages:
+        state["metadata"]["messages"] = [m.model_dump() for m in request.messages]
+    elif request.conversation_history:
+        # 하위 호환: 문자열 직접 전달
         state["metadata"]["conversation_history"] = request.conversation_history
     if request.agent_type:
         state["metadata"]["agent_type"] = request.agent_type

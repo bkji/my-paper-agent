@@ -24,7 +24,7 @@
   "agent_type": "string | null (선택)",
   "user_id": "string | null (선택)",
   "filters": "object | null (선택)",
-  "conversation_history": "string | null (선택)",
+  "messages": [{"role": "user|assistant", "content": "string"}] | null (선택)",
   "stream": "boolean (선택, 기본값: false)"
 }
 ```
@@ -37,8 +37,47 @@
 | `agent_type` | `string \| null` | 선택 | `null` | 에이전트 강제 지정. 생략 시 AI가 자동 분류 |
 | `user_id` | `string \| null` | 선택 | `null` | 사용자 식별자 (트레이싱용) |
 | `filters` | `object \| null` | 선택 | `null` | 날짜/조건 필터 직접 지정 |
-| `conversation_history` | `string \| null` | 선택 | `null` | 이전 대화 히스토리 (멀티턴용) |
+| `messages` | `list[ChatMessage] \| null` | 선택 | `null` | **이전 대화 히스토리 (멀티턴용, 권장 방식)** |
 | `stream` | `boolean` | 선택 | `false` | `true`: SSE 스트리밍, `false`: JSON 일괄 응답 |
+
+### messages (멀티턴 대화 — 권장 방식)
+
+`messages`는 이전 대화를 `{role, content}` 배열로 전달합니다. `/v1/chat/completions`(OpenAI 포맷)와 동일한 구조이므로, 두 엔드포인트를 동일한 방식으로 사용할 수 있습니다.
+
+```json
+{
+  "query": "첫 번째 논문 자세히 분석해줘",
+  "messages": [
+    {"role": "user", "content": "OLED 수명 관련 최신 논문 알려줘"},
+    {"role": "assistant", "content": "OLED 수명 관련 최신 논문을 정리하면..."},
+    {"role": "user", "content": "첫 번째 논문 자세히 분석해줘"}
+  ]
+}
+```
+
+**중요 규칙:**
+- `messages`의 마지막 항목은 현재 질문(`query`와 동일)이어야 합니다
+- 서버가 내부에서 마지막 user 메시지를 제외하고, 나머지를 히스토리로 변환합니다
+- 어시스턴트 답변이 800자를 초과하면 **서버가 자동으로 앞 400자 + 뒤 400자로 압축**합니다
+- 최대 **5턴(10개 항목)** 까지 처리합니다 (초과 시 오래된 턴 자동 제거)
+- **클라이언트는 원본 대화를 그대로 보내면 됩니다** — 압축/포맷팅은 서버가 처리
+
+> 💡 이 방식은 `/v1/chat/completions`와 내부 처리가 **완전히 동일**합니다.
+> 두 엔드포인트 모두 supervisor의 `build_history` 노드에서 동일한 로직으로 히스토리를 변환합니다.
+
+### conversation_history (하위 호환용)
+
+기존에 `conversation_history` 문자열을 직접 전달하던 클라이언트를 위해 하위 호환을 유지합니다.
+**`messages`가 있으면 `conversation_history`는 무시됩니다.**
+
+```json
+{
+  "query": "첫 번째 논문 자세히 분석해줘",
+  "conversation_history": "사용자: OLED 수명 관련 최신 논문 알려줘\n어시스턴트: OLED 수명 관련..."
+}
+```
+
+> ⚠️ 새 클라이언트는 `messages` 방식을 사용하세요. `conversation_history`는 향후 제거될 수 있습니다.
 
 ### agent_type 허용 값 (14개)
 
@@ -160,17 +199,8 @@ data: {"content": " 최신 연구를 정리하면"}
 event: token
 data: {"content": " 다음과 같습니다.\n\n"}
 
-event: token
-data: {"content": "1. **Enhanced OLED Lifetime"}
-
-event: token
-data: {"content": " via Novel Host Materials**"}
-
-event: token
-data: {"content": "\n\n---\n📚 **참조 논문**\n- Enhanced OLED Lifetime... (DOI: 10.1002/jsid.1234)\n\n⚠️ 저작권 고지: ..."}
-
 event: sources
-data: {"sources": [{"paper_id": "SID2024-001", "title": "Enhanced OLED Lifetime via Novel Host Materials", "doi": "10.1002/jsid.1234", "chunk_id": 0, "chunk_text": "We demonstrate...", "score": 0.92}]}
+data: {"sources": [{"paper_id": "SID2024-001", "title": "Enhanced OLED Lifetime via Novel Host Materials", "doi": "10.1002/jsid.1234", "chunk_id": 0, "chunk_text": "...", "score": 0.92}]}
 
 event: done
 data: {"stream_id": "a1b2c3d4e5f6"}
@@ -192,42 +222,31 @@ data: {"stream_id": "a1b2c3d4e5f6"}
 ### 핵심 원칙
 
 > **서버는 stateless입니다.** 대화 상태를 서버가 저장하지 않습니다.
-> 클라이언트가 이전 대화를 `conversation_history` 필드에 문자열로 조립하여 매 요청마다 전송해야 합니다.
+> 클라이언트가 이전 대화를 `messages` 배열로 매 요청마다 전송해야 합니다.
+> 히스토리 압축과 포맷팅은 **서버 내부(supervisor)**에서 자동 처리됩니다.
 
-### conversation_history 포맷
-
-```
-사용자: {1턴 질문}
-어시스턴트: {1턴 답변}
-사용자: {2턴 질문}
-어시스턴트: {2턴 답변}
-```
-
-- 각 턴은 `사용자: ` 또는 `어시스턴트: ` 접두사로 시작
-- 현재 질문은 포함하지 않음 (`query`에 별도 전달)
-- 최대 **5턴(10개 항목)** 권장 — 너무 길면 LLM 컨텍스트 낭비
-- 어시스턴트 답변이 길 경우 **앞 400자 + 뒤 400자로 압축** 권장 (중간 생략)
-
-### 압축 예시
-
-어시스턴트 답변이 800자를 초과하면:
+### 내부 처리 흐름
 
 ```
-어시스턴트: OLED 수명 관련 최신 연구를 정리하면 다음과 같습니다. 1) Kim et al. (2024)은 새로운 호스트 재료를 사용하여...(처음 400자)
-...(중략)...
-따라서 OLED 수명 개선의 핵심은 호스트-도펀트 상호작용 최적화에 있습니다. [출처: Kim2024, Lee2023, Park2024](마지막 400자)
+클라이언트: messages 배열 전송
+  ↓
+supervisor.build_history 노드:
+  1. 마지막 user 메시지 제외 (query에 별도 전달)
+  2. 최근 5턴(10항목)만 유지
+  3. assistant 답변 800자 초과 시 앞400자 + 뒤400자로 압축
+  4. "사용자: ...\n어시스턴트: ..." 포맷으로 변환
+  ↓
+supervisor.extract_dates:
+  - conversation_history에서도 날짜 표현 추출
+  ↓
+supervisor.classify_intent:
+  - conversation_history를 포함하여 의도 분류
+  ↓
+각 에이전트:
+  - conversation_history에서 논문 제목 자동 추적
 ```
 
-### 스트리밍 모드에서의 멀티턴
-
-스트리밍 모드(`stream: true`)에서도 `conversation_history`는 동일하게 사용됩니다.
-단, 스트리밍 응답에서 전체 답변을 조립한 후 히스토리에 추가해야 합니다.
-
-```
-1. token 이벤트들의 content를 이어붙여 전체 답변 완성
-2. done 이벤트 수신 후, 전체 답변을 히스토리에 추가
-3. 다음 요청 시 conversation_history에 포함
-```
+> 이 흐름은 `/api/chat`과 `/v1/chat/completions` 모두 **동일**합니다.
 
 ---
 
@@ -292,32 +311,9 @@ curl -N -X POST http://localhost:20035/api/chat \
 
 > `-N` 플래그: curl의 출력 버퍼링을 비활성화하여 SSE 이벤트를 실시간으로 확인
 
-**응답 (SSE):**
-```
-event: status
-data: {"message": "논문 검색 및 질문 분석 중..."}
-
-event: status
-data: {"message": "답변 생성 중..."}
-
-event: token
-data: {"content": "OLED 수명 관련 최신 논문을"}
-
-event: token
-data: {"content": " 정리하면 다음과 같습니다."}
-
-...
-
-event: sources
-data: {"sources": [{"paper_id": "SID2024-001", "title": "Enhanced OLED Lifetime via Novel Host Materials", "doi": "10.1002/jsid.1234", "chunk_id": 0, "chunk_text": "...", "score": 0.92}]}
-
-event: done
-data: {"stream_id": "a1b2c3d4e5f6"}
-```
-
 ---
 
-### 예시 4: 멀티턴 대화 — 2턴째
+### 예시 4: 멀티턴 대화 — 2턴째 (messages 방식)
 
 시나리오: 1턴에서 OLED 논문을 검색하고, 2턴에서 후속 질문
 
@@ -343,11 +339,16 @@ data: {"stream_id": "a1b2c3d4e5f6"}
 {
   "query": "첫 번째 논문 좀 더 자세히 분석해줘",
   "user_id": "researcher-001",
-  "conversation_history": "사용자: OLED 수명 관련 최신 논문 알려줘\n어시스턴트: OLED 수명 관련 최신 논문을 정리하면 다음과 같습니다.\n\n1. **Enhanced OLED Lifetime via Novel Host Materials** (Kim et al., 2024)\n   - 새로운 호스트 재료로 수명 30% 향상...\n\n2. **Degradation Mechanism in Blue OLED** (Lee et al., 2024)\n   - 블루 OLED 열화 메커니즘 분석..."
+  "messages": [
+    {"role": "user", "content": "OLED 수명 관련 최신 논문 알려줘"},
+    {"role": "assistant", "content": "OLED 수명 관련 최신 논문을 정리하면 다음과 같습니다.\n\n1. **Enhanced OLED Lifetime via Novel Host Materials** (Kim et al., 2024)\n   - 새로운 호스트 재료로 수명 30% 향상...\n\n2. **Degradation Mechanism in Blue OLED** (Lee et al., 2024)\n   - 블루 OLED 열화 메커니즘 분석..."},
+    {"role": "user", "content": "첫 번째 논문 좀 더 자세히 분석해줘"}
+  ]
 }
 ```
 
-> 서버는 `conversation_history`에서 "Enhanced OLED Lifetime via Novel Host Materials"라는 논문 제목을 자동 추출하여, "첫 번째 논문"이 어떤 논문인지 이해합니다.
+> 클라이언트는 이전 응답 원본을 그대로 `messages`에 넣으면 됩니다.
+> 서버가 자동으로 압축하고 히스토리를 구성합니다.
 
 ---
 
@@ -359,15 +360,21 @@ data: {"stream_id": "a1b2c3d4e5f6"}
   "query": "이 논문의 실험 방법은?",
   "stream": true,
   "user_id": "researcher-001",
-  "conversation_history": "사용자: OLED 수명 관련 최신 논문 알려줘\n어시스턴트: 1. Enhanced OLED Lifetime via Novel Host Materials (Kim et al., 2024)...\n사용자: 첫 번째 논문 좀 더 자세히 분석해줘\n어시스턴트: Enhanced OLED Lifetime via Novel Host Materials 논문의 핵심 내용은..."
+  "messages": [
+    {"role": "user", "content": "OLED 수명 관련 최신 논문 알려줘"},
+    {"role": "assistant", "content": "1. Enhanced OLED Lifetime via Novel Host Materials (Kim et al., 2024)..."},
+    {"role": "user", "content": "첫 번째 논문 좀 더 자세히 분석해줘"},
+    {"role": "assistant", "content": "Enhanced OLED Lifetime via Novel Host Materials 논문의 핵심 내용은..."},
+    {"role": "user", "content": "이 논문의 실험 방법은?"}
+  ]
 }
 ```
 
-> 스트리밍과 멀티턴은 동시에 사용할 수 있습니다. 이전 대화를 `conversation_history`에 넣고 `stream: true`로 요청하면 됩니다.
+> 스트리밍과 멀티턴은 동시에 사용할 수 있습니다.
 
 ---
 
-### 예시 6: 멀티턴 대화 — 3턴째 (날짜 컨텍스트 유지)
+### 예시 6: 멀티턴 — 날짜 컨텍스트 유지
 
 **1턴:** "최근 6개월 OLED 논문 보여줘"
 **2턴:** "그 중에서 수명 관련 논문만 필터해줘"
@@ -378,11 +385,17 @@ data: {"stream_id": "a1b2c3d4e5f6"}
 {
   "query": "몇 편이야?",
   "user_id": "researcher-001",
-  "conversation_history": "사용자: 최근 6개월 OLED 논문 보여줘\n어시스턴트: 2025년 10월부터 2026년 3월까지의 OLED 논문 15편을 찾았습니다...(중략)...\n사용자: 그 중에서 수명 관련 논문만 필터해줘\n어시스턴트: 수명 관련 논문 5편을 필터했습니다. 1) Kim2024... 2) Lee2024..."
+  "messages": [
+    {"role": "user", "content": "최근 6개월 OLED 논문 보여줘"},
+    {"role": "assistant", "content": "2025년 10월부터 2026년 3월까지의 OLED 논문 15편을 찾았습니다..."},
+    {"role": "user", "content": "그 중에서 수명 관련 논문만 필터해줘"},
+    {"role": "assistant", "content": "수명 관련 논문 5편을 필터했습니다. 1) Kim2024... 2) Lee2024..."},
+    {"role": "user", "content": "몇 편이야?"}
+  ]
 }
 ```
 
-> 서버는 히스토리에서 "최근 6개월"이라는 날짜 표현을 추출하여, 3턴의 "몇 편이야?"에도 동일한 기간 필터를 적용합니다.
+> 서버는 히스토리에서 "최근 6개월"이라는 날짜 표현을 자동 추출하여, 3턴의 "몇 편이야?"에도 동일한 기간 필터를 적용합니다.
 
 ---
 
@@ -410,20 +423,16 @@ data: {"stream_id": "a1b2c3d4e5f6"}
 1. **대화 히스토리 배열 관리**
    - 클라이언트 측에서 `[{role, content}]` 형태로 대화를 저장
 
-2. **요청 시 문자열로 변환**
-   - 배열을 `"사용자: ...\n어시스턴트: ..."` 포맷의 문자열로 조립
-   - 현재 질문은 `conversation_history`에 포함하지 않음
+2. **요청 시 `messages` 배열에 그대로 전달**
+   - 현재 질문도 마지막 항목으로 포함
+   - 이전 답변은 원본 그대로 (서버가 알아서 압축함)
 
-3. **어시스턴트 답변 압축**
-   - 800자 초과 시: 앞 400자 + `\n...(중략)...\n` + 뒤 400자
-   - 논문 제목과 결론이 앞뒤에 위치하므로 이 방식이 효과적
+3. **새 대화 시작**
+   - `messages`를 생략하면 새 대화로 처리
 
-4. **최대 턴 수 제한**
-   - 최근 5턴(사용자 5개 + 어시스턴트 5개 = 10항목)만 유지
-   - 오래된 턴은 앞에서부터 제거
-
-5. **새 대화 시작**
-   - `conversation_history`를 `null` 또는 생략하면 새 대화로 처리
+4. **스트리밍 모드에서의 히스토리**
+   - `token` 이벤트들의 `content`를 이어붙여 전체 답변 완성
+   - `done` 이벤트 수신 후, 전체 답변을 히스토리에 추가
 
 ### Python 클라이언트 예시 — JSON 모드
 
@@ -435,46 +444,31 @@ API_URL = "http://localhost:20035/api/chat"
 class ChatClient:
     def __init__(self, user_id: str = "client-001"):
         self.user_id = user_id
-        self.history: list[dict] = []  # [{role, content}]
+        self.messages: list[dict] = []
 
     def chat(self, query: str, agent_type: str | None = None) -> dict:
-        # 히스토리 → 문자열 변환
-        conversation_history = self._build_history()
+        # 현재 질문을 messages에 추가
+        self.messages.append({"role": "user", "content": query})
 
-        # 요청
         payload = {
             "query": query,
             "user_id": self.user_id,
+            "messages": self.messages,
         }
         if agent_type:
             payload["agent_type"] = agent_type
-        if conversation_history:
-            payload["conversation_history"] = conversation_history
 
         resp = requests.post(API_URL, json=payload)
         result = resp.json()
 
-        # 히스토리 업데이트
-        self.history.append({"role": "user", "content": query})
-        self.history.append({"role": "assistant", "content": result["answer"]})
+        # 응답을 messages에 추가
+        self.messages.append({"role": "assistant", "content": result["answer"]})
 
         return result
 
-    def _build_history(self) -> str | None:
-        if not self.history:
-            return None
-        lines = []
-        for turn in self.history[-10:]:  # 최근 5턴
-            label = "사용자" if turn["role"] == "user" else "어시스턴트"
-            content = turn["content"]
-            if turn["role"] == "assistant" and len(content) > 800:
-                content = content[:400] + "\n...(중략)...\n" + content[-400:]
-            lines.append(f"{label}: {content}")
-        return "\n".join(lines)
-
     def reset(self):
         """새 대화 시작."""
-        self.history.clear()
+        self.messages.clear()
 
 
 # 사용 예시
@@ -484,7 +478,7 @@ client = ChatClient(user_id="researcher-001")
 r1 = client.chat("OLED 수명 관련 최신 논문 알려줘")
 print(r1["answer"])
 
-# 2턴 (멀티턴 — 히스토리 자동 포함)
+# 2턴 (멀티턴 — messages 자동 포함)
 r2 = client.chat("첫 번째 논문 좀 더 자세히 분석해줘")
 print(r2["answer"])
 
@@ -506,106 +500,25 @@ import requests
 API_URL = "http://localhost:20035/api/chat"
 
 
-def chat_stream(query: str, conversation_history: str | None = None):
-    """SSE 스트리밍으로 답변을 토큰 단위로 수신한다."""
-    payload = {
-        "query": query,
-        "stream": True,
-    }
-    if conversation_history:
-        payload["conversation_history"] = conversation_history
-
-    full_answer = ""
-    sources = []
-
-    # stream=True로 응답을 줄 단위로 읽음
-    with requests.post(API_URL, json=payload, stream=True) as resp:
-        resp.raise_for_status()
-
-        event_type = None
-        for line in resp.iter_lines(decode_unicode=True):
-            if not line:
-                continue
-
-            # SSE 파싱: "event: xxx" 또는 "data: {...}"
-            if line.startswith("event: "):
-                event_type = line[7:]
-                continue
-
-            if line.startswith("data: "):
-                data = json.loads(line[6:])
-
-                if event_type == "status":
-                    print(f"[상태] {data['message']}")
-
-                elif event_type == "token":
-                    # 토큰을 즉시 출력 (줄바꿈 없이 이어붙임)
-                    print(data["content"], end="", flush=True)
-                    full_answer += data["content"]
-
-                elif event_type == "sources":
-                    sources = data["sources"]
-
-                elif event_type == "error":
-                    print(f"\n[오류] {data['message']}")
-
-                elif event_type == "done":
-                    print()  # 마지막 줄바꿈
-                    break
-
-    return {"answer": full_answer, "sources": sources}
-
-
-# ── 사용 예시 ──
-
-# 1턴: 스트리밍으로 답변 수신
-print("=== 1턴 ===")
-r1 = chat_stream("OLED 수명 관련 최신 논문 알려줘")
-
-# 2턴: 히스토리 포함 스트리밍
-print("\n=== 2턴 ===")
-history = f"사용자: OLED 수명 관련 최신 논문 알려줘\n어시스턴트: {r1['answer']}"
-r2 = chat_stream("첫 번째 논문 자세히 분석해줘", conversation_history=history)
-```
-
-### Python 클라이언트 예시 — 스트리밍 + 멀티턴 통합 클래스
-
-```python
-import json
-import requests
-
-API_URL = "http://localhost:20035/api/chat"
-
-
 class StreamingChatClient:
     """스트리밍과 멀티턴을 모두 지원하는 클라이언트."""
 
     def __init__(self, user_id: str = "client-001"):
         self.user_id = user_id
-        self.history: list[dict] = []
+        self.messages: list[dict] = []
 
     def chat(self, query: str, stream: bool = True, agent_type: str | None = None):
-        """질문을 보내고 답변을 받는다.
+        # 현재 질문을 messages에 추가
+        self.messages.append({"role": "user", "content": query})
 
-        Args:
-            query: 사용자 질문
-            stream: True면 토큰 단위 스트리밍, False면 일괄 응답
-            agent_type: 에이전트 강제 지정 (생략 시 자동 분류)
-
-        Returns:
-            dict: {"answer": str, "sources": list}
-        """
         payload = {
             "query": query,
             "user_id": self.user_id,
             "stream": stream,
+            "messages": self.messages,
         }
         if agent_type:
             payload["agent_type"] = agent_type
-
-        history_str = self._build_history()
-        if history_str:
-            payload["conversation_history"] = history_str
 
         if stream:
             result = self._stream_request(payload)
@@ -613,10 +526,8 @@ class StreamingChatClient:
             resp = requests.post(API_URL, json=payload)
             result = resp.json()
 
-        # 히스토리 업데이트
-        self.history.append({"role": "user", "content": query})
-        self.history.append({"role": "assistant", "content": result["answer"]})
-
+        # 응답을 messages에 추가
+        self.messages.append({"role": "assistant", "content": result["answer"]})
         return result
 
     def _stream_request(self, payload: dict) -> dict:
@@ -651,20 +562,8 @@ class StreamingChatClient:
 
         return {"answer": full_answer, "sources": sources}
 
-    def _build_history(self) -> str | None:
-        if not self.history:
-            return None
-        lines = []
-        for turn in self.history[-10:]:
-            label = "사용자" if turn["role"] == "user" else "어시스턴트"
-            content = turn["content"]
-            if turn["role"] == "assistant" and len(content) > 800:
-                content = content[:400] + "\n...(중략)...\n" + content[-400:]
-            lines.append(f"{label}: {content}")
-        return "\n".join(lines)
-
     def reset(self):
-        self.history.clear()
+        self.messages.clear()
 
 
 # ── 사용 예시 ──
@@ -687,18 +586,18 @@ const API_URL = "http://localhost:20035/api/chat";
 class ChatClient {
   constructor(userId = "client-001") {
     this.userId = userId;
-    this.history = []; // [{role, content}]
+    this.messages = [];
   }
 
   async chat(query, agentType = null) {
+    this.messages.push({ role: "user", content: query });
+
     const payload = {
       query,
       user_id: this.userId,
+      messages: this.messages,
     };
     if (agentType) payload.agent_type = agentType;
-
-    const historyStr = this._buildHistory();
-    if (historyStr) payload.conversation_history = historyStr;
 
     const resp = await fetch(API_URL, {
       method: "POST",
@@ -707,29 +606,12 @@ class ChatClient {
     });
     const result = await resp.json();
 
-    this.history.push({ role: "user", content: query });
-    this.history.push({ role: "assistant", content: result.answer });
-
+    this.messages.push({ role: "assistant", content: result.answer });
     return result;
   }
 
-  _buildHistory() {
-    if (this.history.length === 0) return null;
-    const recent = this.history.slice(-10);
-    const lines = recent.map((turn) => {
-      const label = turn.role === "user" ? "사용자" : "어시스턴트";
-      let content = turn.content;
-      if (turn.role === "assistant" && content.length > 800) {
-        content =
-          content.slice(0, 400) + "\n...(중략)...\n" + content.slice(-400);
-      }
-      return `${label}: ${content}`;
-    });
-    return lines.join("\n");
-  }
-
   reset() {
-    this.history = [];
+    this.messages = [];
   }
 }
 ```
@@ -739,11 +621,8 @@ class ChatClient {
 ```javascript
 const API_URL = "http://localhost:20035/api/chat";
 
-async function chatStream(query, conversationHistory = null) {
-  const payload = { query, stream: true };
-  if (conversationHistory) {
-    payload.conversation_history = conversationHistory;
-  }
+async function chatStream(query, messages = []) {
+  const payload = { query, stream: true, messages };
 
   const resp = await fetch(API_URL, {
     method: "POST",
@@ -780,9 +659,8 @@ async function chatStream(query, conversationHistory = null) {
             console.log(`[상태] ${data.message}`);
             break;
           case "token":
-            // 화면에 토큰 즉시 표시 (예: DOM에 추가)
-            process.stdout.write(data.content); // Node.js
-            // document.getElementById('answer').textContent += data.content;  // 브라우저
+            // 화면에 토큰 즉시 표시
+            document.getElementById("answer").textContent += data.content;
             fullAnswer += data.content;
             break;
           case "sources":
@@ -792,7 +670,6 @@ async function chatStream(query, conversationHistory = null) {
             console.error(`[오류] ${data.message}`);
             break;
           case "done":
-            console.log("\n[완료]");
             return { answer: fullAnswer, sources };
         }
       }
@@ -800,19 +677,9 @@ async function chatStream(query, conversationHistory = null) {
   }
   return { answer: fullAnswer, sources };
 }
-
-// 사용 예시
-const r1 = await chatStream("OLED 수명 관련 최신 논문 알려줘");
-const r2 = await chatStream(
-  "첫 번째 논문 자세히 분석해줘",
-  `사용자: OLED 수명 관련 최신 논문 알려줘\n어시스턴트: ${r1.answer}`
-);
 ```
 
-### JavaScript — 브라우저 EventSource 사용 (GET 불가, fetch 권장)
-
-> 주의: 브라우저의 `EventSource` API는 GET 요청만 지원하므로 `/api/chat`(POST)에는 사용할 수 없습니다.
-> 위의 `fetch` + `ReadableStream` 방식을 사용하세요.
+> 주의: 브라우저의 `EventSource` API는 GET 요청만 지원하므로, `fetch` + `ReadableStream` 방식을 사용해야 합니다.
 
 ---
 
@@ -822,27 +689,20 @@ const r2 = await chatStream(
 |------|-------------|----------------------|
 | 프로토콜 | 자체 포맷 | OpenAI-compatible |
 | 인증 | 없음 | Bearer token |
-| 멀티턴 | 클라이언트가 `conversation_history` 문자열 전달 | 클라이언트가 `messages` 배열 전달, 서버가 자동 조립 |
+| 멀티턴 | `messages` 배열 전달 | `messages` 배열 전달 |
+| **멀티턴 내부 처리** | **동일 (supervisor.build_history)** | **동일 (supervisor.build_history)** |
 | 스트리밍 | `stream: true` → SSE (named events) | `stream: true` → SSE (OpenAI 포맷) |
 | SSE 포맷 | `event: token\ndata: {"content": "..."}` | `data: {"choices": [{"delta": {"content": "..."}}]}` |
 | 에이전트 지정 | `agent_type` 필드 | 미지원 (항상 자동 분류) |
 | 날짜 필터 직접 지정 | `filters` 필드 | 미지원 |
+| 진행 상태 알림 | `event: status` 이벤트 | 없음 |
 | 주요 사용처 | 커스텀 클라이언트, CLI, 내부 서비스 | Open WebUI, ChatGPT 호환 UI |
 
-### 스트리밍 방식의 차이
+### 두 엔드포인트의 공통점
 
-| | `/api/chat` (SSE named events) | `/v1/chat/completions` (OpenAI SSE) |
-|---|---|---|
-| 상태 알림 | `event: status` 이벤트로 진행 상태 표시 | 없음 (검색 중 무응답) |
-| 토큰 전달 | `event: token` + `{"content": "..."}` | `data: {"choices":[{"delta":{"content":"..."}}]}` |
-| 소스 전달 | `event: sources` + 구조화된 JSON | 답변 텍스트에 포함 |
-| 완료 신호 | `event: done` | `data: [DONE]` |
-| 에러 처리 | `event: error` 이벤트 | 스트림 중단 |
-
-**`/api/chat` 스트리밍의 장점:**
-- `status` 이벤트로 사용자에게 "검색 중..." 같은 진행 상태를 표시할 수 있음
-- `sources` 이벤트로 논문 목록을 구조화된 데이터로 별도 수신 (파싱 불필요)
-- `error` 이벤트로 에러를 깔끔하게 처리
+- **멀티턴 처리가 완전히 동일**: 두 엔드포인트 모두 `messages` 배열을 supervisor에 전달하고, `build_history` 노드에서 동일한 로직(압축, 포맷팅, 턴 제한)으로 `conversation_history` 문자열을 생성
+- **에이전트 동작이 동일**: 동일한 supervisor 파이프라인, 동일한 14개 에이전트, 동일한 날짜 파싱/의도 분류 로직
+- **차이는 입출력 포맷뿐**: `/api/chat`은 자체 JSON, `/v1/chat/completions`는 OpenAI 포맷
 
 ---
 
@@ -872,12 +732,7 @@ const r2 = await chatStream(
 
 ### 스트리밍 중 에러
 
-스트리밍 모드에서 에러가 발생하면 `error` 이벤트로 전달되고, 이후 `done` 이벤트로 스트림이 종료됩니다.
-
 ```
-event: status
-data: {"message": "논문 검색 및 질문 분석 중..."}
-
 event: error
 data: {"message": "처리 중 오류 발생: Connection refused"}
 
@@ -889,59 +744,40 @@ data: {"stream_id": "a1b2c3d4e5f6"}
 
 ## 서버 내부 처리 흐름
 
-### JSON 모드 (`stream: false`)
+### 통합 파이프라인 (두 엔드포인트 공통)
 
 ```
-클라이언트 요청
-  ↓
-POST /api/chat (ChatRequest, stream=false)
-  ↓
-state 구성:
-  - query ← request.query
-  - metadata.conversation_history ← request.conversation_history
-  - metadata.agent_type ← request.agent_type
-  ↓
-Supervisor 파이프라인 (LangGraph):
-  ① extract_dates — 날짜 파싱 (query + conversation_history 모두 검사)
-  ② extract_conditions — 키워드/저자/DOI 추출 (LLM)
-  ③ classify_intent — 에이전트 분류 (conversation_history 포함하여 판단)
-  ④ route_to_agent — 에이전트 실행 → LLM 답변 생성
-  ⑤ add_citation — 출처 추가
-  ↓
-ChatResponse {answer, sources, trace_id}
+POST /api/chat                    POST /v1/chat/completions
+  │ messages 배열                    │ messages 배열
+  │ + query, filters,               │ (OpenAI 포맷)
+  │   agent_type                    │
+  └──────────┬───────────────────────┘
+             ↓
+  ┌─ Supervisor 파이프라인 (LangGraph) ─────────────────────┐
+  │                                                         │
+  │  ⓪ build_history                                       │
+  │     messages 배열 → conversation_history 문자열 변환     │
+  │     (압축, 최근 5턴 제한 — 두 엔드포인트 동일 로직)      │
+  │                                                         │
+  │  ① extract_dates                                        │
+  │     날짜 파싱 (query + conversation_history 모두 검사)   │
+  │                                                         │
+  │  ② extract_conditions                                   │
+  │     키워드/저자/DOI 추출 (LLM)                           │
+  │                                                         │
+  │  ③ classify_intent                                      │
+  │     에이전트 분류 (conversation_history 포함)             │
+  │                                                         │
+  │  ④ route_to_agent                                       │
+  │     14개 에이전트 중 하나 실행                            │
+  │                                                         │
+  │  ⑤ append_citation                                      │
+  │     출처 + 저작권 고지 추가                               │
+  └─────────────────────────────────────────────────────────┘
+             ↓
+  ┌─────────┴─────────┐
+  │ /api/chat         │ /v1/chat/completions
+  │ ChatResponse JSON │ OpenAI 포맷 JSON
+  │ 또는 SSE stream   │ 또는 OpenAI SSE stream
+  └───────────────────┘
 ```
-
-### 스트리밍 모드 (`stream: true`)
-
-```
-클라이언트 요청
-  ↓
-POST /api/chat (ChatRequest, stream=true)
-  ↓
-state 구성 + _stream_mode = True
-  ↓
-[SSE: status] "논문 검색 및 질문 분석 중..."
-  ↓
-Supervisor 파이프라인 (LangGraph):
-  ① extract_dates — 날짜 파싱
-  ② extract_conditions — 키워드 추출
-  ③ classify_intent — 에이전트 분류
-  ④ route_to_agent — 에이전트 실행 (LLM 최종 호출은 스킵, messages만 준비)
-  ⑤ add_citation — 출처 준비
-  ↓
-[SSE: status] "답변 생성 중..."
-  ↓
-LLM 실시간 스트리밍 (토큰 단위):
-  [SSE: token] "OLED"
-  [SSE: token] " 수명"
-  [SSE: token] " 관련..."
-  ... (토큰마다 즉시 전송)
-  ↓
-[SSE: token] "\n\n---\n📚 참조 논문..." (출처 텍스트)
-[SSE: sources] [{paper_id, title, ...}]  (구조화된 소스)
-[SSE: done] {stream_id: "..."}
-```
-
-> **핵심 차이**: JSON 모드는 ④에서 LLM 답변까지 모두 완성한 후 반환하지만,
-> 스트리밍 모드는 ④에서 LLM 호출을 스킵하고 messages만 준비한 뒤,
-> 별도 스트리밍 단계에서 토큰 단위로 전송합니다.

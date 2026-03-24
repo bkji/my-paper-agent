@@ -81,16 +81,19 @@ async def list_models():
 
 
 def _build_state(request: OAIRequest) -> dict:
-    """요청 메시지에서 query, conversation_history를 추출하여 state를 구성한다."""
+    """요청 메시지에서 query를 추출하고, messages를 supervisor에 넘긴다.
+
+    대화 히스토리 조립(압축, 포맷팅)은 supervisor.build_history에서 통합 처리한다.
+    """
     query = ""
     system_ctx = ""
-    chat_history: list[dict] = []
+    chat_messages: list[dict] = []
 
     for msg in request.messages:
         if msg.role == "system":
             system_ctx = msg.content
         elif msg.role in ("user", "assistant"):
-            chat_history.append({"role": msg.role, "content": msg.content})
+            chat_messages.append({"role": msg.role, "content": msg.content})
 
     for msg in reversed(request.messages):
         if msg.role == "user":
@@ -100,29 +103,15 @@ def _build_state(request: OAIRequest) -> dict:
     if system_ctx:
         query = f"[System context: {system_ctx}]\n\n{query}"
 
-    # 멀티턴: 이전 대화 히스토리를 컨텍스트로 포함
-    # 최근 10개 항목 (5턴 분량) 유지, 어시스턴트 응답은 핵심만 압축
-    conversation_context = ""
-    if len(chat_history) > 1:
-        prev_turns = chat_history[:-1]
-        lines = []
-        for turn in prev_turns[-10:]:
-            role_label = "사용자" if turn["role"] == "user" else "어시스턴트"
-            content = turn["content"]
-            if turn["role"] == "assistant" and len(content) > 800:
-                # 앞 400자 + 뒤 400자 (중간 생략) — 논문 제목/결론이 앞뒤에 있음
-                content = content[:400] + "\n...(중략)...\n" + content[-400:]
-            lines.append(f"{role_label}: {content}")
-        conversation_context = "\n".join(lines)
-
     state = {
         "query": query,
         "user_id": "openwebui",
         "filters": {},
         "metadata": {},
     }
-    if conversation_context:
-        state["metadata"]["conversation_history"] = conversation_context
+    # messages 배열을 그대로 전달 → supervisor.build_history에서 변환
+    if chat_messages:
+        state["metadata"]["messages"] = chat_messages
 
     return state
 

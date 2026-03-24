@@ -6,12 +6,18 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class ChatMessage(BaseModel):
+    role: str       # "user" | "assistant"
+    content: str
+
+
 class ChatRequest(BaseModel):
     query: str
     agent_type: Optional[str] = None
     user_id: Optional[str] = None
     filters: Optional[dict] = None
-    conversation_history: Optional[str] = None
+    messages: Optional[list[ChatMessage]] = None
+    conversation_history: Optional[str] = None  # 하위 호환용 (messages 우선)
     stream: Optional[bool] = False
 
 
