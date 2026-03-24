@@ -336,8 +336,11 @@ data: {"stream_id": "a1b2c3d4e5f6"}
 ```bash
 curl -X POST http://localhost:20035/api/chat \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <인증키>" \
   -d '{"query": "OLED 수명 관련 최신 논문 알려줘"}'
 ```
+
+> 인증: `.env`의 `OPENAI_COMPAT_API_KEY` 미설정 시 `Authorization` 헤더 생략 가능.
 
 ```json
 {
@@ -352,6 +355,7 @@ curl -X POST http://localhost:20035/api/chat \
 ```bash
 curl -X POST http://localhost:20035/api/chat \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <인증키>" \
   -d '{"query": "2024년 OLED 논문 몇 편이야?", "agent_type": "analytics"}'
 ```
 
@@ -360,54 +364,64 @@ curl -X POST http://localhost:20035/api/chat \
 ```bash
 curl -N -X POST http://localhost:20035/api/chat \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <인증키>" \
   -d '{"query": "OLED 수명 관련 최신 논문 알려줘", "stream": true}'
 ```
 
 > `-N`: curl 출력 버퍼링 비활성화 (SSE 실시간 확인용)
 
-### 예시 4: 멀티턴 3턴 대화 (단계별 전체 흐름)
+### 예시 4: curl 멀티턴 3턴 대화 (단계별 전체 흐름)
 
-**1턴 요청:**
-```json
-{
-  "query": "OLED 논문 최신 3편 알려줘",
-  "messages": [
-    {"role": "user", "content": "OLED 논문 최신 3편 알려줘"}
-  ]
-}
+**1턴:**
+```bash
+curl -X POST http://localhost:20035/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <인증키>" \
+  -d '{
+    "query": "2024년 10월 논문 편수 알려줘",
+    "messages": [
+      {"role": "user", "content": "2024년 10월 논문 편수 알려줘"}
+    ]
+  }'
+```
+**1턴 응답:** `"2024년 10월에 발표된 논문은 4편입니다."`
+
+**2턴** — 이전 대화를 `messages`에 누적:
+```bash
+curl -X POST http://localhost:20035/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <인증키>" \
+  -d '{
+    "query": "그 논문들 제목도 보여줘",
+    "messages": [
+      {"role": "user", "content": "2024년 10월 논문 편수 알려줘"},
+      {"role": "assistant", "content": "2024년 10월에 발표된 논문은 4편입니다."},
+      {"role": "user", "content": "그 논문들 제목도 보여줘"}
+    ]
+  }'
+```
+**2턴 응답:** `"1. High-speed inspection... 2. Wide-viewing-angle..."`
+
+**3턴** — 계속 누적:
+```bash
+curl -X POST http://localhost:20035/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <인증키>" \
+  -d '{
+    "query": "첫 번째 논문을 요약해줘",
+    "messages": [
+      {"role": "user", "content": "2024년 10월 논문 편수 알려줘"},
+      {"role": "assistant", "content": "2024년 10월에 발표된 논문은 4편입니다."},
+      {"role": "user", "content": "그 논문들 제목도 보여줘"},
+      {"role": "assistant", "content": "1. High-speed inspection... 2. Wide-viewing-angle..."},
+      {"role": "user", "content": "첫 번째 논문을 요약해줘"}
+    ]
+  }'
 ```
 
-**1턴 응답:** `"1) Kim2024, 2) Lee2024, 3) Park2024"`
-
-**2턴 요청:**
-```json
-{
-  "query": "두 번째 논문 요약해줘",
-  "messages": [
-    {"role": "user", "content": "OLED 논문 최신 3편 알려줘"},
-    {"role": "assistant", "content": "1) Kim2024, 2) Lee2024, 3) Park2024"},
-    {"role": "user", "content": "두 번째 논문 요약해줘"}
-  ]
-}
-```
-
-**2턴 응답:** `"Lee2024는 블루 OLED 열화 분석 논문입니다"`
-
-**3턴 요청:**
-```json
-{
-  "query": "저자가 누구야?",
-  "messages": [
-    {"role": "user", "content": "OLED 논문 최신 3편 알려줘"},
-    {"role": "assistant", "content": "1) Kim2024, 2) Lee2024, 3) Park2024"},
-    {"role": "user", "content": "두 번째 논문 요약해줘"},
-    {"role": "assistant", "content": "Lee2024는 블루 OLED 열화 분석 논문입니다"},
-    {"role": "user", "content": "저자가 누구야?"}
-  ]
-}
-```
-
-> 서버가 히스토리에서 "Lee2024"를 자동 추적하여 해당 논문의 저자 정보를 응답합니다.
+> - `query`는 항상 마지막 user 메시지와 동일
+> - `assistant`의 `content`는 실제 응답 원문을 그대로 넣으면 됨 (서버가 자동 압축)
+> - 새 대화 시작 시 `messages`를 빈 배열 `[]`로 초기화
 
 ### 예시 5: 멀티턴 + 스트리밍
 
