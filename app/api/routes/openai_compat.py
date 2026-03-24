@@ -65,7 +65,7 @@ class OAIRequest(BaseModel):
     stream: Optional[bool] = False
 
 
-@router.get("/models")
+@router.get("/models", dependencies=[Depends(_verify_api_key)])
 async def list_models():
     return {
         "object": "list",
