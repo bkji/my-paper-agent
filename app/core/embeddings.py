@@ -34,6 +34,10 @@ async def embed_texts(
 ) -> list[list[float]]:
     """텍스트 목록을 임베딩 벡터로 변환한다."""
     logger.info("embed_texts called: model=%s, text_count=%d", settings.EMBEDDING_MODEL, len(texts))
+    langfuse_context(
+        input={"text_count": len(texts), "total_chars": sum(len(t) for t in texts)},
+        metadata={"model": settings.EMBEDDING_MODEL},
+    )
 
     client = _get_http_client()
     response = await client.post(
@@ -60,5 +64,7 @@ async def embed_query(
     user_id: str | None = None,
 ) -> list[float]:
     """단일 쿼리를 임베딩 벡터로 변환한다."""
+    langfuse_context(input={"query": query[:200]}, metadata={"model": settings.EMBEDDING_MODEL})
     vectors = await embed_texts([query], trace_name=trace_name, user_id=user_id)
+    langfuse_context(output={"dim": len(vectors[0]) if vectors else 0})
     return vectors[0]

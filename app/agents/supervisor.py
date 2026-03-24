@@ -77,6 +77,7 @@ async def build_history(state: AgentState) -> AgentState:
     우선순위: metadata.messages > metadata.conversation_history (하위 호환)
     """
     metadata = state.get("metadata") or {}
+    langfuse_context(input={"query": state.get("query", ""), "message_count": len(metadata.get("messages") or [])})
 
     raw_messages = metadata.get("messages")
     if raw_messages:
@@ -87,6 +88,10 @@ async def build_history(state: AgentState) -> AgentState:
             logger.info("[Supervisor] built conversation_history from %d messages (%d chars)",
                         len(raw_messages), len(history_str))
 
+    langfuse_context(output={
+        "has_history": bool(metadata.get("conversation_history")),
+        "history_len": len(metadata.get("conversation_history", "")),
+    })
     return state
 
 
@@ -225,6 +230,7 @@ async def extract_dates(state: AgentState) -> AgentState:
     """쿼리에서 날짜 표현을 추출하여 filters에 반영한다. 서버 시간을 기준으로 상대 날짜를 계산."""
     query = state.get("query", "")
     filters = state.get("filters") or {}
+    langfuse_context(input={"query": query, "existing_filters": filters})
 
     # 서버 현재 시간을 기준으로 날짜 파싱
     now = datetime.now()
@@ -259,6 +265,7 @@ async def extract_dates(state: AgentState) -> AgentState:
         langfuse_context(output={"date_filters": date_filters, "server_time": server_time["datetime"]})
     else:
         state["filters"] = filters if filters else None
+        langfuse_context(output={"date_filters": None, "server_time": server_time["datetime"]})
 
     # DOI 추출: 쿼리에 DOI 패턴이 있으면 filters에 저장
     doi_match = re.search(r'(10\.\d{4,}/[^\s,;]+)', query)
@@ -319,6 +326,7 @@ async def extract_conditions(state: AgentState) -> AgentState:
     query = state.get("query", "")
     filters = state.get("filters") or {}
     metadata = state.get("metadata") or {}
+    langfuse_context(input={"query": query, "existing_filters": filters})
 
     now = datetime.now()
     current_date = now.strftime("%Y%m%d")
@@ -394,13 +402,23 @@ async def extract_conditions(state: AgentState) -> AgentState:
 
     state["filters"] = filters if filters else None
     state["metadata"] = metadata
+    langfuse_context(output={
+        "filters": filters,
+        "keyword": metadata.get("analytics_keyword"),
+        "author": metadata.get("analytics_author"),
+        "doi": filters.get("doi"),
+        "volume": metadata.get("analytics_volume"),
+        "issue": metadata.get("analytics_issue"),
+    })
     return state
 
 
 @observe(name="supervisor_classify")
 async def classify_intent(state: AgentState) -> AgentState:
     """사용자 쿼리의 의도를 분류하여 적절한 agent_type을 결정한다."""
-    logger.info("[Supervisor] classify_intent: query=%s", state.get("query", "")[:100])
+    query = state.get("query", "")
+    logger.info("[Supervisor] classify_intent: query=%s", query[:100])
+    langfuse_context(input={"query": query, "has_history": bool((state.get("metadata") or {}).get("conversation_history"))})
 
     explicit_type = state.get("metadata", {}).get("agent_type")
     if explicit_type and explicit_type in AGENT_REGISTRY:
@@ -454,9 +472,11 @@ async def route_to_agent(state: AgentState) -> AgentState:
     """분류된 agent_type에 따라 해당 Agent를 실행한다."""
     agent_type = state.get("metadata", {}).get("agent_type", "paper_qa")
     logger.info("[Supervisor] route_to_agent: agent_type=%s", agent_type)
+    langfuse_context(input={"agent_type": agent_type, "query": state.get("query", "")[:100]})
 
     if agent_type not in AGENT_REGISTRY:
         state["answer"] = f"Unknown agent type: {agent_type}"
+        langfuse_context(output={"error": f"unknown agent: {agent_type}"})
         return state
 
     import importlib
@@ -467,6 +487,11 @@ async def route_to_agent(state: AgentState) -> AgentState:
     result = await agent.ainvoke(state)
 
     state.update(result)
+    langfuse_context(output={
+        "agent_type": agent_type,
+        "answer_len": len(state.get("answer", "")),
+        "source_count": len(state.get("sources") or []),
+    })
     return state
 
 

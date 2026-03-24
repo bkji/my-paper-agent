@@ -48,6 +48,11 @@ async def chat_completion(
         "max_tokens": max_tokens,
     }
 
+    langfuse_context(
+        input={"messages": [{"role": m["role"], "content": m["content"][:200]} for m in messages]},
+        metadata={"model": settings.LLM_MODEL, "temperature": temperature, "max_tokens": max_tokens},
+    )
+
     try:
         response = await client.post("/chat/completions", json=payload)
         response.raise_for_status()
@@ -58,10 +63,16 @@ async def chat_completion(
 
         langfuse_context(
             output={"response": result[:500]},
+            usage={
+                "input": usage.get("prompt_tokens", 0),
+                "output": usage.get("completion_tokens", 0),
+                "total": usage.get("total_tokens", 0),
+            },
             metadata={
                 "model": settings.LLM_MODEL,
-                "prompt_tokens": str(usage.get("prompt_tokens", "")),
-                "completion_tokens": str(usage.get("completion_tokens", "")),
+                "prompt_tokens": usage.get("prompt_tokens", 0),
+                "completion_tokens": usage.get("completion_tokens", 0),
+                "total_tokens": usage.get("total_tokens", 0),
             },
         )
         logger.info(
@@ -90,6 +101,11 @@ async def chat_completion_stream(
     """LM Studio streaming chat completion."""
     logger.info("chat_completion_stream called: model=%s", settings.LLM_MODEL)
 
+    langfuse_context(
+        input={"messages": [{"role": m["role"], "content": m["content"][:200]} for m in messages]},
+        metadata={"model": settings.LLM_MODEL, "temperature": temperature, "max_tokens": max_tokens},
+    )
+
     client = _get_http_client()
     payload = {
         "model": settings.LLM_MODEL,
@@ -100,6 +116,7 @@ async def chat_completion_stream(
     }
 
     full_response = ""
+    usage_data = {}
     async with client.stream("POST", "/chat/completions", json=payload) as response:
         response.raise_for_status()
         async for line in response.aiter_lines():
@@ -114,6 +131,29 @@ async def chat_completion_stream(
             if content:
                 full_response += content
                 yield content
+            # 일부 서버는 마지막 chunk에 usage를 포함
+            if "usage" in chunk:
+                usage_data = chunk["usage"]
 
-    langfuse_context(output={"response": full_response[:500]})
-    logger.info("chat_completion_stream done: response_len=%d", len(full_response))
+    # 토큰 사용량 (서버가 제공하지 않으면 추정)
+    prompt_tokens = usage_data.get("prompt_tokens", 0)
+    completion_tokens = usage_data.get("completion_tokens", 0) or len(full_response) // 4
+    total_tokens = usage_data.get("total_tokens", 0) or (prompt_tokens + completion_tokens)
+
+    langfuse_context(
+        output={"response": full_response[:500]},
+        usage={
+            "input": prompt_tokens,
+            "output": completion_tokens,
+            "total": total_tokens,
+        },
+        metadata={
+            "model": settings.LLM_MODEL,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "response_len": len(full_response),
+        },
+    )
+    logger.info("chat_completion_stream done: response_len=%d, tokens=%d/%d/%d",
+                len(full_response), prompt_tokens, completion_tokens, total_tokens)
