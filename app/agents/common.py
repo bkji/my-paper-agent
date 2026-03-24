@@ -33,9 +33,21 @@ def _extract_nth_paper_from_history(query: str, conversation_history: str) -> st
         return None
 
     # 어시스턴트 응답에서 번호가 매겨진 논문 제목 추출
-    # 패턴: "1. 제목: XXX, 저자: YYY" 또는 "1. Title" 또는 "1) Title"
+    # 참조 문헌 섹션("**참조 문헌:**" 이후)은 유사도 순이므로 제외하고
+    # LLM 본문의 순서(사용자가 실제로 보는 순서)에서만 추출
     titles = []
+    in_citation_section = False
     for line in conversation_history.split("\n"):
+        # 참조 문헌 섹션 시작 감지 → 이후 줄은 건너뜀
+        if "참조 문헌" in line or "참조문헌" in line:
+            in_citation_section = True
+            continue
+        # 참조 문헌 섹션 이후 다른 턴(사용자:)이 나오면 섹션 해제
+        if in_citation_section and line.startswith("사용자:"):
+            in_citation_section = False
+        if in_citation_section:
+            continue
+
         # "N. 제목: Title, 저자:" 형식 우선
         tm = re.search(r'\d+[.)]\s*제목:\s*(.+?)(?:\s*,\s*저자|\s*,\s*DOI|\s*$)', line)
         if not tm:
