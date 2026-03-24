@@ -60,14 +60,25 @@ def build_conversation_history_from_messages(messages: list[dict]) -> str:
         role_label = "사용자" if turn["role"] == "user" else "어시스턴트"
         content = turn.get("content", "")
         if turn["role"] == "assistant":
-            # 참조 문헌/저작권 고지 섹션 제거 (히스토리에 불필요하고 논문 순서 혼동 방지)
-            citation_markers = ["\n---\n**참조 문헌:**", "\n---\n본 서비스는"]
-            for marker in citation_markers:
-                marker_pos = content.find(marker)
-                if marker_pos != -1:
-                    content = content[:marker_pos].rstrip()
-                    break
-            if len(content) > ASSISTANT_COMPRESS_THRESHOLD:
+            # 저작권 고지 제거 (히스토리에 불필요)
+            disclaimer_pos = content.find("\n---\n본 서비스는")
+            if disclaimer_pos != -1:
+                content = content[:disclaimer_pos].rstrip()
+
+            # 참조 문헌 섹션은 "참조 문헌 N번" 멀티턴용으로 보존
+            # 본문만 압축: 참조 문헌 앞부분(본문)이 길면 압축하고 참조 문헌은 그대로 붙임
+            citation_pos = content.find("\n---\n**참조 문헌:**")
+            if citation_pos != -1:
+                body = content[:citation_pos]
+                citation_part = content[citation_pos:]
+                if len(body) > ASSISTANT_COMPRESS_THRESHOLD:
+                    body = (
+                        body[:ASSISTANT_COMPRESS_HEAD]
+                        + "\n...(중략)...\n"
+                        + body[-ASSISTANT_COMPRESS_TAIL:]
+                    )
+                content = body + citation_part
+            elif len(content) > ASSISTANT_COMPRESS_THRESHOLD:
                 content = (
                     content[:ASSISTANT_COMPRESS_HEAD]
                     + "\n...(중략)...\n"

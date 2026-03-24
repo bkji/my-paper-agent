@@ -17,11 +17,19 @@ def _extract_nth_paper_from_history(query: str, conversation_history: str) -> st
     # "1번째", "첫번째", "첫 번째", "두번째", "두 번째", "세번째" 등
     ordinal_map = {"첫": 1, "두": 2, "세": 3, "네": 4, "다섯": 5}
     idx = None
+    from_citation = False  # "참조 문헌 N번" 패턴인지 여부
 
-    # 숫자 + 번째 패턴
-    m = re.search(r'(\d+)\s*번째\s*논문', query)
+    # "참조 문헌 N번" / "참조문헌 N번" 패턴
+    m = re.search(r'참조\s*문헌\s*(\d+)\s*번', query)
     if m:
         idx = int(m.group(1))
+        from_citation = True
+
+    # 숫자 + 번째 패턴
+    if idx is None:
+        m = re.search(r'(\d+)\s*번째\s*논문', query)
+        if m:
+            idx = int(m.group(1))
 
     # 한글 서수 패턴
     if idx is None:
@@ -32,33 +40,44 @@ def _extract_nth_paper_from_history(query: str, conversation_history: str) -> st
     if idx is None or idx < 1:
         return None
 
-    # 어시스턴트 응답에서 번호가 매겨진 논문 제목 추출
-    # 참조 문헌 섹션("**참조 문헌:**" 이후)은 유사도 순이므로 제외하고
-    # LLM 본문의 순서(사용자가 실제로 보는 순서)에서만 추출
+    # "참조 문헌 N번" → 참조 문헌 섹션에서 추출 (유사도 순)
+    # "N번째 논문" → LLM 본문에서 추출 (사용자가 보는 순서)
     titles = []
-    in_citation_section = False
-    for line in conversation_history.split("\n"):
-        # 참조 문헌 섹션 시작 감지 → 이후 줄은 건너뜀
-        if "참조 문헌" in line or "참조문헌" in line:
-            in_citation_section = True
-            continue
-        # 참조 문헌 섹션 이후 다른 턴(사용자:)이 나오면 섹션 해제
-        if in_citation_section and line.startswith("사용자:"):
-            in_citation_section = False
-        if in_citation_section:
-            continue
-
-        # "N. 제목: Title, 저자:" 형식 우선
-        tm = re.search(r'\d+[.)]\s*제목:\s*(.+?)(?:\s*,\s*저자|\s*,\s*DOI|\s*$)', line)
-        if not tm:
-            # "N. EnglishTitle..." 형식
-            tm = re.search(r'\d+[.)]\s*([A-Za-z][A-Za-z\w\s\-:,()]{5,})', line)
-        if tm:
-            titles.append(tm.group(1).strip().rstrip(",;."))
+    if from_citation:
+        # 참조 문헌 섹션에서만 추출
+        in_citation_section = False
+        for line in conversation_history.split("\n"):
+            if "참조 문헌" in line or "참조문헌" in line:
+                in_citation_section = True
+                continue
+            if in_citation_section and line.startswith("사용자:"):
+                in_citation_section = False
+            if not in_citation_section:
+                continue
+            tm = re.search(r'\d+[.)]\s*제목:\s*(.+?)(?:\s*,\s*저자|\s*,\s*DOI|\s*\(|\s*$)', line)
+            if tm:
+                titles.append(tm.group(1).strip().rstrip(",;."))
+    else:
+        # LLM 본문에서만 추출 (참조 문헌 섹션 제외)
+        in_citation_section = False
+        for line in conversation_history.split("\n"):
+            if "참조 문헌" in line or "참조문헌" in line:
+                in_citation_section = True
+                continue
+            if in_citation_section and line.startswith("사용자:"):
+                in_citation_section = False
+            if in_citation_section:
+                continue
+            tm = re.search(r'\d+[.)]\s*제목:\s*(.+?)(?:\s*,\s*저자|\s*,\s*DOI|\s*$)', line)
+            if not tm:
+                tm = re.search(r'\d+[.)]\s*([A-Za-z][A-Za-z\w\s\-:,()]{5,})', line)
+            if tm:
+                titles.append(tm.group(1).strip().rstrip(",;."))
 
     if titles and idx <= len(titles):
         title = titles[idx - 1]
-        logger.info("[Common] extracted %d-th paper title from history: '%s'", idx, title[:60])
+        src_label = "citation" if from_citation else "body"
+        logger.info("[Common] extracted %d-th paper title from %s: '%s'", idx, src_label, title[:60])
         return title
 
     return None
@@ -70,7 +89,8 @@ def extract_paper_title_from_history(state: dict) -> str | None:
     지원 패턴:
     - "논문의 2.1 부분 번역해줘" → 이전 턴 논문 제목 추출
     - "이 논문", "그 논문", "위 논문" → 이전 턴 논문 제목 추출
-    - "1번째 논문", "첫번째 논문", "두번째 논문" → 이전 응답에서 N번째 논문 추출
+    - "1번째 논문", "첫번째 논문", "두번째 논문" → 이전 응답 본문에서 N번째 논문 추출
+    - "참조 문헌 1번", "참조문헌 3번" → 참조 문헌 섹션에서 N번째 논문 추출
 
     Returns:
         논문 제목 키워드 (str) or None
