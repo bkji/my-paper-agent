@@ -161,6 +161,9 @@ def build_sources(search_results: list[dict]) -> list[dict]:
             "chunk_id": doc.get("chunk_id", 0),
             "chunk_text": doc.get("paper_text", "")[:300],
             "score": doc.get("score", 0.0),
+            "score_rrf": doc.get("score_rrf", 0.0),
+            "score_dense": doc.get("score_dense", 0.0),
+            "score_sparse": doc.get("score_sparse", 0.0),
         })
     return sources
 

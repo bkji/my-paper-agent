@@ -182,10 +182,46 @@ async def hybrid_search(
         output_fields=OUTPUT_FIELDS,
     )
 
+    # SHOW_CITATION_SCORE가 켜져 있으면 dense/sparse 개별 점수도 수집
+    dense_scores: dict[int, float] = {}
+    sparse_scores: dict[int, float] = {}
+    if settings.SHOW_CITATION_SCORE:
+        try:
+            dense_results = client.search(
+                collection_name=settings.MILVUS_COLLECTION,
+                data=[query_vector],
+                anns_field="embeddings",
+                search_params={"metric_type": "IP", "params": {"nprobe": 16}},
+                limit=k,
+                filter=filters,
+                output_fields=["id"],
+            )
+            for hit in dense_results[0]:
+                dense_scores[hit.id] = hit.distance
+
+            if query_text:
+                sparse_results = client.search(
+                    collection_name=settings.MILVUS_COLLECTION,
+                    data=[query_text],
+                    anns_field="bm25_keywords_sparse",
+                    search_params={"metric_type": "BM25"},
+                    limit=k,
+                    filter=filters,
+                    output_fields=["id"],
+                )
+                for hit in sparse_results[0]:
+                    sparse_scores[hit.id] = hit.distance
+        except Exception as e:
+            logger.warning("Failed to collect individual scores: %s", e)
+
     hits = []
     for hit in results[0]:
         doc = hit.get("entity", hit)
+        doc_id = hit.get("id", hit.id if hasattr(hit, "id") else 0)
         doc["score"] = hit.get("distance", 0.0)
+        doc["score_rrf"] = hit.get("distance", 0.0)
+        doc["score_dense"] = dense_scores.get(doc_id, 0.0)
+        doc["score_sparse"] = sparse_scores.get(doc_id, 0.0)
         hits.append(doc)
 
     logger.info("hybrid_search done: top_k=%d, results=%d, filters=%s", k, len(hits), filters)

@@ -59,9 +59,18 @@ def format_citation_text(sources: list[dict]) -> str:
                 if doi_link:
                     line += f", DOI: {doi_link}"
                 if settings.SHOW_CITATION_SCORE:
-                    score = src.get("score", 0.0)
-                    if score > 0:
-                        line += f" (유사도: {score:.4f})"
+                    score_rrf = src.get("score_rrf", 0.0)
+                    score_dense = src.get("score_dense", 0.0)
+                    score_sparse = src.get("score_sparse", 0.0)
+                    if score_rrf > 0 or score_dense > 0 or score_sparse > 0:
+                        parts_score = []
+                        if score_dense > 0:
+                            parts_score.append(f"Dense: {score_dense:.4f}")
+                        if score_sparse > 0:
+                            parts_score.append(f"BM25: {score_sparse:.4f}")
+                        if score_rrf > 0:
+                            parts_score.append(f"RRF: {score_rrf:.4f}")
+                        line += f" ({', '.join(parts_score)})"
                 parts.append(line)
 
     parts.append(f"\n\n---\n{DISCLAIMER}")
