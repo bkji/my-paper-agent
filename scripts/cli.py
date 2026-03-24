@@ -1,4 +1,4 @@
-"""CLI — 터미널에서 Agent를 테스트한다."""
+"""CLI — 터미널에서 Agent를 테스트한다 (멀티턴 지원)."""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +18,14 @@ from app.agents.supervisor import supervisor, AGENT_REGISTRY
 from app.core.langfuse_client import init_langfuse, trace_attributes
 
 
-async def run_agent(query: str, agent_type: str | None = None, filters: dict | None = None, user_id: str | None = None):
+async def run_agent(
+    query: str,
+    agent_type: str | None = None,
+    filters: dict | None = None,
+    user_id: str | None = None,
+    messages: list[dict] | None = None,
+) -> str:
+    """에이전트를 실행하고 결과를 출력한다. 답변 텍스트를 반환한다."""
     init_langfuse()
 
     state = {
@@ -29,6 +36,8 @@ async def run_agent(query: str, agent_type: str | None = None, filters: dict | N
     }
     if agent_type:
         state["metadata"]["agent_type"] = agent_type
+    if messages:
+        state["metadata"]["messages"] = messages
 
     with trace_attributes(user_id=state["user_id"], metadata={"agent_type": agent_type or "auto", "source": "cli"}):
         result = await supervisor.ainvoke(state)
@@ -38,7 +47,9 @@ async def run_agent(query: str, agent_type: str | None = None, filters: dict | N
     if result.get("filters"):
         print(f"Filters: {result['filters']}")
     print(f"{'='*60}")
-    print(result.get("answer", "(no answer)"))
+
+    answer = result.get("answer", "(no answer)")
+    print(answer)
 
     sources = result.get("sources", [])
     if sources:
@@ -46,33 +57,70 @@ async def run_agent(query: str, agent_type: str | None = None, filters: dict | N
         for s in sources[:5]:
             print(f"  [{s.get('score', 0):.4f}] {s.get('title', 'N/A')[:80]}")
 
+    return answer
+
 
 async def interactive():
     init_langfuse()
     agent_type = None
     filters = None
+    messages: list[dict] = []
 
-    print("Co-Scientist Interactive CLI (type /quit to exit)")
-    print("Commands: /agents, /use <agent>, /filter <json>, /clear, /quit\n")
+    print("Co-Scientist Interactive CLI (type /help for commands)")
+    print(f"{'='*60}\n")
 
     while True:
+        # 턴 수 표시
+        turn = len([m for m in messages if m["role"] == "user"]) + 1 if messages else 1
         try:
-            user_input = input(">>> ").strip()
+            user_input = input(f"[턴 {turn}] >>> ").strip()
         except (EOFError, KeyboardInterrupt):
             break
 
         if not user_input:
             continue
+
+        # ── 명령어 처리 ──
         if user_input == "/quit":
             break
+
+        if user_input == "/help":
+            print("  /new            새 대화 시작 (히스토리 초기화)")
+            print("  /history        현재 대화 히스토리 보기")
+            print("  /agents         에이전트 목록 보기")
+            print("  /use <agent>    에이전트 강제 지정")
+            print("  /filter <json>  날짜 필터 설정")
+            print("  /clear          에이전트 + 필터 + 히스토리 모두 초기화")
+            print("  /quit           종료")
+            continue
+
+        if user_input == "/new":
+            messages.clear()
+            print("새 대화를 시작합니다.\n")
+            continue
+
+        if user_input == "/history":
+            if not messages:
+                print("  (대화 히스토리 없음)")
+            else:
+                for i, m in enumerate(messages):
+                    role = "사용자" if m["role"] == "user" else "AI"
+                    content = m["content"]
+                    if len(content) > 80:
+                        content = content[:77] + "..."
+                    print(f"  [{i+1}] {role}: {content}")
+            continue
+
         if user_input == "/agents":
             for name, info in AGENT_REGISTRY.items():
                 print(f"  {name}: {info['description']}")
             continue
+
         if user_input.startswith("/use "):
             agent_type = user_input[5:].strip()
             print(f"Agent set to: {agent_type}")
             continue
+
         if user_input.startswith("/filter "):
             try:
                 filters = json.loads(user_input[8:])
@@ -80,13 +128,26 @@ async def interactive():
             except json.JSONDecodeError:
                 print("Invalid JSON")
             continue
+
         if user_input == "/clear":
             agent_type = None
             filters = None
-            print("Cleared agent and filters")
+            messages.clear()
+            print("에이전트, 필터, 히스토리를 모두 초기화했습니다.\n")
             continue
 
-        await run_agent(user_input, agent_type=agent_type, filters=filters)
+        # ── 질문 실행 ──
+        messages.append({"role": "user", "content": user_input})
+
+        answer = await run_agent(
+            user_input,
+            agent_type=agent_type,
+            filters=filters,
+            messages=messages,
+        )
+
+        messages.append({"role": "assistant", "content": answer})
+        print()
 
 
 def main():
