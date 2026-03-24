@@ -101,15 +101,17 @@ def _build_state(request: OAIRequest) -> dict:
         query = f"[System context: {system_ctx}]\n\n{query}"
 
     # 멀티턴: 이전 대화 히스토리를 컨텍스트로 포함
+    # 최근 10개 항목 (5턴 분량) 유지, 어시스턴트 응답은 핵심만 압축
     conversation_context = ""
     if len(chat_history) > 1:
         prev_turns = chat_history[:-1]
         lines = []
-        for turn in prev_turns[-6:]:
+        for turn in prev_turns[-10:]:
             role_label = "사용자" if turn["role"] == "user" else "어시스턴트"
             content = turn["content"]
-            if turn["role"] == "assistant" and len(content) > 500:
-                content = content[:500] + "..."
+            if turn["role"] == "assistant" and len(content) > 800:
+                # 앞 400자 + 뒤 400자 (중간 생략) — 논문 제목/결론이 앞뒤에 있음
+                content = content[:400] + "\n...(중략)...\n" + content[-400:]
             lines.append(f"{role_label}: {content}")
         conversation_context = "\n".join(lines)
 
