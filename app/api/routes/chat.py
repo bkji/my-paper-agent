@@ -4,38 +4,18 @@ import logging
 import time
 import uuid
 
-from typing import Optional
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
-from app.config import settings
+from app.api.deps import verify_api_key
 from app.core import llm
 from app.core.langfuse_client import observe, trace_attributes
 from app.models.schemas import ChatRequest, ChatResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-_bearer_scheme = HTTPBearer(auto_error=False)
-
-
-async def _verify_api_key(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
-) -> None:
-    """OPENAI_COMPAT_API_KEY가 설정되어 있으면 Bearer 토큰을 검증한다. 미설정이면 인증 없이 통과."""
-    expected = settings.OPENAI_COMPAT_API_KEY
-    if not expected:
-        return
-    if credentials is None or credentials.credentials != expected:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or missing API key",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 
 def _build_state(request: ChatRequest) -> dict:
@@ -53,7 +33,7 @@ def _build_state(request: ChatRequest) -> dict:
     return state
 
 
-@router.post("/", response_model=None, dependencies=[Depends(_verify_api_key)])
+@router.post("/", response_model=None, dependencies=[Depends(verify_api_key)])
 @observe(name="api_chat")
 async def chat(request: ChatRequest):
     logger.info("POST /api/chat: agent_type=%s, stream=%s, query=%s",

@@ -19,14 +19,13 @@ import time
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
-from app.config import settings
+from app.api.deps import verify_api_key
 from app.core import llm
 from app.core.langfuse_client import trace_attributes
 
@@ -34,22 +33,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 MODEL_ID = "co-scientist-bk03"
-
-_bearer_scheme = HTTPBearer(auto_error=False)
-
-
-async def _verify_api_key(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
-) -> None:
-    expected = settings.OPENAI_COMPAT_API_KEY
-    if not expected:
-        return
-    if credentials is None or credentials.credentials != expected:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or missing API key",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 
 class OAIMessage(BaseModel):
@@ -65,7 +48,7 @@ class OAIRequest(BaseModel):
     stream: Optional[bool] = False
 
 
-@router.get("/models", dependencies=[Depends(_verify_api_key)])
+@router.get("/models", dependencies=[Depends(verify_api_key)])
 async def list_models():
     return {
         "object": "list",
@@ -116,7 +99,7 @@ def _build_state(request: OAIRequest) -> dict:
     return state
 
 
-@router.post("/chat/completions", dependencies=[Depends(_verify_api_key)])
+@router.post("/chat/completions", dependencies=[Depends(verify_api_key)])
 async def chat_completions(request: OAIRequest):
     state = _build_state(request)
 
