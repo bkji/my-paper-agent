@@ -12,26 +12,74 @@ from app.core.tools import get_current_date_context
 logger = logging.getLogger(__name__)
 
 
+def _extract_nth_paper_from_history(query: str, conversation_history: str) -> str | None:
+    """'N번째 논문' 패턴을 감지하여 히스토리에서 해당 순번의 논문 제목을 추출한다."""
+    # "1번째", "첫번째", "첫 번째", "두번째", "두 번째", "세번째" 등
+    ordinal_map = {"첫": 1, "두": 2, "세": 3, "네": 4, "다섯": 5}
+    idx = None
+
+    # 숫자 + 번째 패턴
+    m = re.search(r'(\d+)\s*번째\s*논문', query)
+    if m:
+        idx = int(m.group(1))
+
+    # 한글 서수 패턴
+    if idx is None:
+        m = re.search(r'(첫|두|세|네|다섯)\s*번째\s*논문', query)
+        if m:
+            idx = ordinal_map.get(m.group(1))
+
+    if idx is None or idx < 1:
+        return None
+
+    # 어시스턴트 응답에서 번호가 매겨진 논문 제목 추출
+    # 패턴: "1. 제목: XXX, 저자: YYY" 또는 "1. Title" 또는 "1) Title"
+    titles = []
+    for line in conversation_history.split("\n"):
+        # "N. 제목: Title, 저자:" 형식 우선
+        tm = re.search(r'\d+[.)]\s*제목:\s*(.+?)(?:\s*,\s*저자|\s*,\s*DOI|\s*$)', line)
+        if not tm:
+            # "N. EnglishTitle..." 형식
+            tm = re.search(r'\d+[.)]\s*([A-Za-z][A-Za-z\w\s\-:,()]{5,})', line)
+        if tm:
+            titles.append(tm.group(1).strip().rstrip(",;."))
+
+    if titles and idx <= len(titles):
+        title = titles[idx - 1]
+        logger.info("[Common] extracted %d-th paper title from history: '%s'", idx, title[:60])
+        return title
+
+    return None
+
+
 def extract_paper_title_from_history(state: dict) -> str | None:
     """대화 히스토리에서 이전 턴에 참조된 논문 제목을 추출한다.
 
-    "논문의 2.1 부분 번역해줘" 같은 현재 쿼리에서 제목 없이 논문을 참조할 때,
-    이전 사용자 메시지에서 가장 최근 논문 제목을 찾는다.
+    지원 패턴:
+    - "논문의 2.1 부분 번역해줘" → 이전 턴 논문 제목 추출
+    - "이 논문", "그 논문", "위 논문" → 이전 턴 논문 제목 추출
+    - "1번째 논문", "첫번째 논문", "두번째 논문" → 이전 응답에서 N번째 논문 추출
 
     Returns:
         논문 제목 키워드 (str) or None
     """
     query = state.get("query", "")
+    conversation_history = (state.get("metadata") or {}).get("conversation_history", "")
+
     # 현재 쿼리에 이미 긴 영문 제목이 있으면 히스토리 탐색 불필요
     if re.search(r'[A-Za-z]{3,}\s+[A-Za-z]{3,}\s+[A-Za-z]{3,}.*논문', query):
         return None
 
-    # 현재 쿼리가 "논문의", "이 논문", "그 논문", "위 논문" 등 논문 참조 표현을 포함하는지 확인
-    if not re.search(r'논문의|이\s*논문|그\s*논문|위\s*논문|해당\s*논문|같은\s*논문', query):
+    if not conversation_history:
         return None
 
-    conversation_history = (state.get("metadata") or {}).get("conversation_history", "")
-    if not conversation_history:
+    # "N번째 논문" 패턴 → 이전 응답에서 순번으로 논문 제목 추출
+    nth_title = _extract_nth_paper_from_history(query, conversation_history)
+    if nth_title:
+        return nth_title
+
+    # "논문의", "이 논문", "그 논문" 등 논문 참조 표현 확인
+    if not re.search(r'논문의|이\s*논문|그\s*논문|위\s*논문|해당\s*논문|같은\s*논문', query):
         return None
 
     # 히스토리에서 사용자 메시지를 역순으로 탐색하여 가장 최근 논문 제목 찾기

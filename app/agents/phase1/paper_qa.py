@@ -32,7 +32,7 @@ CONTEXT_TEMPLATE = """### Retrieved Paper Excerpts
 
 TITLE_EXTRACT_PROMPT = """Extract the paper title keyword from the user's query.
 If the current query does not mention a specific paper title, check the conversation history
-to find which paper the user is referring to (e.g. "이 논문", "논문의", "위 논문", "그 논문").
+to find which paper the user is referring to (e.g. "이 논문", "논문의", "위 논문", "그 논문", "1번째 논문", "첫번째 논문").
 
 Return ONLY JSON: {"title_keyword": "<keyword or null>"}
 
@@ -42,14 +42,23 @@ Examples:
 "Micro LED 결함 검출 방법은?" → {"title_keyword": null}
 "최근 OLED 연구 동향은?" → {"title_keyword": null}
 
-With conversation history:
+With conversation history (referencing previous paper):
 [Previous] User: "Subjective assessment of visual fidelity 논문 상세 설명해줘" / Assistant: "이 논문은..."
 [Current] "논문의 2.1 부분 번역해줘"
 → {"title_keyword": "Subjective assessment of visual fidelity"}
 
 [Previous] User: "High-speed inspection 논문 분석해줘" / Assistant: "..."
 [Current] "이 논문의 결론 부분 요약해줘"
-→ {"title_keyword": "High-speed inspection"}"""
+→ {"title_keyword": "High-speed inspection"}
+
+With conversation history (Nth paper from a list):
+[Previous] Assistant: "2편입니다:\n1. Wide-viewing-angle dual-view...\n2. High-speed inspection..."
+[Current] "1번째 논문 abstract 보여줘"
+→ {"title_keyword": "Wide-viewing-angle dual-view"}
+
+[Previous] Assistant: "1. Paper A Title\n2. Paper B Title"
+[Current] "두번째 논문 요약해줘"
+→ {"title_keyword": "Paper B Title"}"""
 
 
 async def retrieve(state: AgentState) -> AgentState:
