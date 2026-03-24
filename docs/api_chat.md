@@ -129,6 +129,29 @@ curl -X POST http://localhost:20035/api/chat \
 
 ## 2. 요청 (Request)
 
+### 최소 요청 (필수 파라미터만)
+
+**`query`만 필수**이며, 나머지는 모두 선택입니다.
+
+```bash
+curl -X POST http://localhost:20035/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "OLED 논문 알려줘"}'
+```
+
+### 필수/선택 요약
+
+| 필드 | 필수 여부 | 기본값 | 한 줄 설명 |
+|------|-----------|--------|-----------|
+| `query` | **필수** | - | 사용자의 현재 질문 |
+| `messages` | 선택 | `null` | 멀티턴 대화 히스토리 |
+| `stream` | 선택 | `false` | SSE 스트리밍 여부 |
+| `agent_type` | 선택 | `null` | 에이전트 강제 지정 |
+| `user_id` | 선택 | `null` | 트레이싱용 사용자 ID |
+| `filters` | 선택 | `null` | 날짜 필터 직접 지정 |
+| `conversation_history` | 선택 | `null` | 하위 호환용 (messages 우선) |
+| **헤더** `Authorization` | **조건부** | - | `.env`에 API 키 설정 시 필수 |
+
 ### ChatRequest 스키마
 
 ```json
