@@ -160,8 +160,14 @@ async def extract_dates(state: AgentState) -> AgentState:
 
     date_filters = extract_date_filters(query, reference_date=now)
 
-    # 멀티턴: 현재 쿼리에서 날짜를 못 찾으면 대화 히스토리에서 추출 시도
-    if not date_filters:
+    # 멀티턴: 현재 쿼리에 날짜 관련 표현이 전혀 없을 때만 히스토리에서 추출
+    # "지난 여름", "최근", "작년" 등 날짜 표현이 있으면 히스토리 fallback 하지 않음
+    # (LLM extract_conditions에서 처리)
+    _has_date_hint = bool(re.search(
+        r'\d{4}년|최근|작년|올해|지난|전년|금년|상반기|하반기|분기|개월|여름|겨울|봄|가을',
+        query
+    ))
+    if not date_filters and not _has_date_hint:
         conversation_history = (state.get("metadata") or {}).get("conversation_history", "")
         if conversation_history:
             date_filters = extract_date_filters(conversation_history, reference_date=now)

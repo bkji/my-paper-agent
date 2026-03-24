@@ -116,6 +116,27 @@ def extract_date_filters(query: str, reference_date: datetime | None = None) -> 
     if re.search(r'올해\s*초', query):
         return {"coverdate_from": ref.year * 10000 + 101, "coverdate_to": ref.year * 10000 + 331}
 
+    # D3: 지난 + 계절 "지난 여름", "지난 겨울"
+    m = re.search(r'지난\s*(봄|여름|가을|겨울)', query)
+    if m:
+        season = m.group(1)
+        # "지난 여름": 현재 월 기준으로 가장 최근 지난 해당 계절
+        season_months = {"봄": 3, "여름": 6, "가을": 9, "겨울": 12}
+        season_start = season_months[season]
+        # 현재 달이 해당 계절 이후면 올해, 아니면 작년
+        if ref.month > season_start + 2:
+            y = ref.year
+        else:
+            y = ref.year - 1
+        season_map = {
+            "봄": (301, 531), "여름": (601, 831),
+            "가을": (901, 1130), "겨울": (1201, 10228),
+        }
+        s, e = season_map[season]
+        if season == "겨울":
+            return {"coverdate_from": y * 10000 + 1201, "coverdate_to": (y + 1) * 10000 + 228}
+        return {"coverdate_from": y * 10000 + s, "coverdate_to": y * 10000 + e}
+
     # D3: 작년 + 계절
     m = re.search(r'작년\s*(봄|여름|가을|겨울)', query)
     if m:
