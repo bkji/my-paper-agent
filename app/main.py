@@ -6,7 +6,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import chat, documents, agents, openai_compat
+from app.api.routes import chat, chat_v2, documents, agents, openai_compat
 from app.core.langfuse_client import init_langfuse, flush_langfuse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
@@ -36,6 +36,7 @@ async def root():
         "docs": "/docs",
         "endpoints": {
             "chat": "/api/chat",
+            "chat_v2": "/api/chat_v2",
             "agents": "/api/agents",
             "documents": "/api/documents",
             "openai_compat": "/v1/chat/completions",
@@ -44,6 +45,7 @@ async def root():
 
 
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(chat_v2.router, prefix="/api/chat_v2", tags=["chat-v2"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(openai_compat.router, prefix="/v1", tags=["openai-compat"])
