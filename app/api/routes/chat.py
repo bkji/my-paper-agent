@@ -1,4 +1,5 @@
 """Chat API — 단일 엔드포인트로 모든 Agent를 호출한다."""
+import asyncio
 import json
 import logging
 import time
@@ -19,7 +20,6 @@ router = APIRouter()
 
 
 @router.post("/", response_model=None, dependencies=[Depends(verify_api_key)])
-@observe(name="api_chat")
 async def chat(request: ChatRequest):
     logger.info("POST /api/chat: agent_type=%s, stream=%s, query=%s",
                 request.agent_type, request.stream, request.query[:100])
@@ -37,7 +37,12 @@ async def chat(request: ChatRequest):
             },
         )
 
-    # Non-streaming
+    # Non-streaming — @observe가 전체 구간을 커버
+    return await _non_stream_chat(request, state)
+
+
+@observe(name="api_chat")
+async def _non_stream_chat(request: ChatRequest, state: dict) -> ChatResponse:
     with trace_attributes(user_id=request.user_id, metadata={"agent_type": request.agent_type or "auto"}):
         result = await supervisor.ainvoke(state)
 
@@ -55,82 +60,121 @@ def _sse_event(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-async def _stream_response(state: dict):
-    """실시간 스트리밍: 검색/분류 후 LLM 답변을 토큰 단위로 전송한다.
+# ── 스트리밍: @observe pipeline + Queue ──────────────────────────
 
-    SSE 이벤트 종류:
-      - status   : 파이프라인 진행 상태 (검색 중, 분류 중 등)
-      - token    : LLM 토큰 1개
-      - sources  : 참조 논문 목록
-      - done     : 스트리밍 완료
-      - error    : 에러 발생
-    """
+
+@observe(name="api_chat_stream")
+async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
+    """@observe 안에서 전체 파이프라인 실행 → 1 trace 보장."""
+    with trace_attributes(
+        user_id=state.get("user_id"),
+        metadata={"source": "api_chat_stream"},
+    ):
+        await queue.put(("status", "논문 검색 및 질문 분석 중..."))
+
+        try:
+            result = await supervisor.ainvoke(state)
+        except Exception as e:
+            logger.error("[ChatStream] supervisor error: %s", e)
+            await queue.put(("error", f"처리 중 오류 발생: {e}"))
+            return {}
+
+        llm_messages = (result.get("metadata") or {}).get("_llm_messages")
+        temperature = (result.get("metadata") or {}).get("_llm_temperature", 0.3)
+        sources = result.get("sources") or []
+
+        if not llm_messages:
+            answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
+            await queue.put(("token", answer))
+            await queue.put(("sources", sources))
+            usage = (result.get("metadata") or {}).get("usage") or {}
+            await queue.put(("usage", usage))
+            return result
+
+        await queue.put(("status", "답변 생성 중..."))
+
+        usage_out: dict = {}
+        try:
+            async for token in llm.chat_completion_stream(
+                messages=llm_messages,
+                temperature=temperature,
+                trace_name="chat_stream_generate",
+                user_id=state.get("user_id"),
+                usage_out=usage_out,
+            ):
+                await queue.put(("token", token))
+        except Exception as e:
+            logger.error("[ChatStream] LLM streaming error: %s", e)
+            await queue.put(("error", f"답변 생성 중 오류: {e}"))
+
+        citation = format_citation_text(sources)
+        if citation:
+            await queue.put(("token", citation))
+
+        await queue.put(("sources", sources))
+        await queue.put(("usage", usage_out))
+
+        return result
+
+
+async def _stream_response(state: dict):
+    """SSE generator — @observe pipeline에서 Queue로 받은 이벤트를 SSE로 변환."""
     stream_id = uuid.uuid4().hex[:12]
+    queue: asyncio.Queue = asyncio.Queue()
+    usage_data: dict = {}
+
+    task = asyncio.create_task(_run_stream_pipeline(state, queue))
 
     try:
-        # trace_attributes가 전체 스트리밍 구간을 감싼다
-        with trace_attributes(
-            user_id=state.get("user_id"),
-            metadata={"source": "api_chat_stream"},
-        ):
-            # Phase 1: 검색 + 분류 (LLM 최종 호출은 스킵)
-            yield _sse_event("status", {"message": "논문 검색 및 질문 분석 중..."})
+        while True:
+            done_tasks, _ = await asyncio.wait(
+                [asyncio.ensure_future(queue.get()), task],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
 
-            try:
-                result = await supervisor.ainvoke(state)
-            except Exception as e:
-                logger.error("[ChatStream] supervisor error: %s", e)
-                yield _sse_event("error", {"message": f"처리 중 오류 발생: {e}"})
-                yield _sse_event("done", {"stream_id": stream_id})
-                return
+            for t in done_tasks:
+                if t is task:
+                    while not queue.empty():
+                        msg_type, data = queue.get_nowait()
+                        event = _handle_msg(msg_type, data, usage_data)
+                        if event:
+                            yield event
+                    yield _sse_event("done", {
+                        "stream_id": stream_id,
+                        "usage": usage_data if usage_data else None,
+                    })
+                    task.result()
+                    return
+                else:
+                    msg_type, data = t.result()
+                    event = _handle_msg(msg_type, data, usage_data)
+                    if event:
+                        yield event
 
-            llm_messages = (result.get("metadata") or {}).get("_llm_messages")
-            temperature = (result.get("metadata") or {}).get("_llm_temperature", 0.3)
-            sources = result.get("sources") or []
-
-            if not llm_messages:
-                answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
-                yield _sse_event("token", {"content": answer})
-                if sources:
-                    yield _sse_event("sources", {"sources": [s if isinstance(s, dict) else s.model_dump() for s in sources]})
-                pre_usage = (result.get("metadata") or {}).get("usage") or {}
-                yield _sse_event("done", {
-                    "stream_id": stream_id,
-                    "usage": pre_usage if pre_usage else None,
-                })
-                return
-
-            # Phase 2: LLM 실시간 스트리밍
-            yield _sse_event("status", {"message": "답변 생성 중..."})
-
-            full_answer = ""
-            usage_out: dict = {}
-            try:
-                async for token in llm.chat_completion_stream(
-                    messages=llm_messages,
-                    temperature=temperature,
-                    trace_name="chat_stream_generate",
-                    user_id=state.get("user_id"),
-                    usage_out=usage_out,
-                ):
-                    full_answer += token
-                    yield _sse_event("token", {"content": token})
-            except Exception as e:
-                logger.error("[ChatStream] LLM streaming error: %s", e)
-                yield _sse_event("error", {"message": f"답변 생성 중 오류: {e}"})
-
-            # Phase 3: 참조 문헌 + 저작권 고지
-            citation = format_citation_text(sources)
-            if citation:
-                yield _sse_event("token", {"content": citation})
-
-            # Phase 4: 소스 목록 전송
-            if sources:
-                yield _sse_event("sources", {"sources": [s if isinstance(s, dict) else s.model_dump() for s in sources]})
-
-            yield _sse_event("done", {
-                "stream_id": stream_id,
-                "usage": usage_out if usage_out else None,
-            })
+    except Exception as e:
+        logger.error("[ChatStream] unexpected error: %s", e)
+        yield _sse_event("error", {"message": f"예기치 않은 오류: {e}"})
+        yield _sse_event("done", {"stream_id": stream_id})
     finally:
+        if not task.done():
+            task.cancel()
         flush_langfuse()
+
+
+def _handle_msg(msg_type: str, data, usage_data: dict):
+    """Queue 메시지를 SSE 이벤트 문자열로 변환."""
+    if msg_type == "status":
+        return _sse_event("status", {"message": data})
+    elif msg_type == "token":
+        return _sse_event("token", {"content": data})
+    elif msg_type == "sources":
+        if data:
+            return _sse_event("sources", {
+                "sources": [s if isinstance(s, dict) else s.model_dump() for s in data],
+            })
+    elif msg_type == "usage":
+        if data:
+            usage_data.update(data)
+    elif msg_type == "error":
+        return _sse_event("error", {"message": data})
+    return None

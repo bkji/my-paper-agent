@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -27,7 +28,7 @@ from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
 from app.api.deps import verify_api_key
 from app.core import llm
-from app.core.langfuse_client import trace_attributes, flush_langfuse
+from app.core.langfuse_client import observe, trace_attributes, flush_langfuse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -150,97 +151,145 @@ async def chat_completions(request: Request, body: OAIRequest):
             },
         )
 
-    # Non-streaming: 기존 방식
+    # Non-streaming
+    return await _non_stream_oai(state, body.model, user_id)
+
+
+@observe(name="api_openai_compat")
+async def _non_stream_oai(state: dict, model: str, user_id: str) -> dict:
+    """Non-streaming: @observe로 1 trace 보장."""
     with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}):
         result = await supervisor.ainvoke(state)
-
     usage = (result.get("metadata") or {}).get("usage") or {}
-    return _make_response(result.get("answer", ""), body.model, usage=usage)
+    return _make_response(result.get("answer", ""), model, usage=usage)
+
+
+@observe(name="api_openai_compat_stream")
+async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: str):
+    """@observe 안에서 전체 파이프라인 실행 → 1 trace 보장."""
+    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat_stream"}):
+        state["metadata"]["_stream_mode"] = True
+
+        try:
+            result = await supervisor.ainvoke(state)
+        except Exception as e:
+            logger.error("[OAIStream] supervisor error: %s", e)
+            await queue.put(("error", str(e)))
+            return {}
+
+        llm_messages = (result.get("metadata") or {}).get("_llm_messages")
+        temperature = (result.get("metadata") or {}).get("_llm_temperature", 0.3)
+        sources = result.get("sources") or []
+
+        if not llm_messages:
+            answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
+            citation = format_citation_text(sources)
+            full_text = answer.rstrip() + citation
+            await queue.put(("full_text", full_text))
+            usage = (result.get("metadata") or {}).get("usage") or {}
+            await queue.put(("usage", usage))
+            return result
+
+        usage_out: dict = {}
+        try:
+            async for token in llm.chat_completion_stream(
+                messages=llm_messages,
+                temperature=temperature,
+                trace_name="stream_generate",
+                user_id=user_id,
+                usage_out=usage_out,
+            ):
+                await queue.put(("token", token))
+        except Exception as e:
+            logger.error("[OAIStream] LLM streaming error: %s", e)
+            await queue.put(("error_token", str(e)))
+
+        citation = format_citation_text(sources)
+        if citation:
+            await queue.put(("token", citation))
+
+        await queue.put(("usage", usage_out))
+        return result
 
 
 async def _real_stream(
     state: dict, model: str, user_id: str = "", include_usage: bool = False,
 ):
-    """실시간 스트리밍: 검색/분류 후 LLM 응답을 토큰 단위로 전송한다."""
+    """실시간 스트리밍: @observe pipeline에서 Queue로 받아 OpenAI chunk로 변환."""
     chunk_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
+    queue: asyncio.Queue = asyncio.Queue()
+    usage_data: dict = {}
+
+    # 첫 번째 chunk: role 전송
+    yield _sse_role_chunk(chunk_id, model, include_usage)
+
+    task = asyncio.create_task(_run_oai_stream_pipeline(state, queue, user_id))
 
     try:
-        # trace_attributes가 전체 스트리밍 구간을 감싼다
-        with trace_attributes(user_id=user_id, metadata={"source": "openai_compat_stream"}):
-            # 첫 번째 chunk: role 전송 (OpenAI 스펙 필수)
-            yield _sse_role_chunk(chunk_id, model, include_usage)
+        while True:
+            done_tasks, _ = await asyncio.wait(
+                [asyncio.ensure_future(queue.get()), task],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
 
-            # Phase 1: 검색 + 분류 (LLM 최종 호출은 스킵)
-            state["metadata"]["_stream_mode"] = True
-            result = await supervisor.ainvoke(state)
+            for t in done_tasks:
+                if t is task:
+                    # pipeline 완료 — 남은 queue 소진
+                    while not queue.empty():
+                        msg_type, data = queue.get_nowait()
+                        chunk = _handle_oai_msg(msg_type, data, chunk_id, model, include_usage, usage_data)
+                        if chunk:
+                            yield chunk
 
-            llm_messages = (result.get("metadata") or {}).get("_llm_messages")
-            temperature = (result.get("metadata") or {}).get("_llm_temperature", 0.3)
-            sources = result.get("sources") or []
+                    # finish_reason: "stop"
+                    done_chunk = {
+                        "id": chunk_id, "object": "chat.completion.chunk",
+                        "created": int(time.time()), "model": model,
+                        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
+                    }
+                    if include_usage:
+                        done_chunk["usage"] = None
+                    yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
 
-            if not llm_messages:
-                # LLM messages가 없으면 (에러 또는 빈 결과) 기존 answer를 스트리밍
-                answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
-                citation = format_citation_text(sources)
-                full_text = answer.rstrip() + citation
-                async for chunk in _fake_stream(full_text, model, send_role=False, include_usage=include_usage):
-                    yield chunk
-                return
+                    # usage chunk
+                    if include_usage:
+                        yield f"data: {json.dumps({'id': chunk_id, 'object': 'chat.completion.chunk', 'created': int(time.time()), 'model': model, 'choices': [], 'usage': {'prompt_tokens': usage_data.get('prompt_tokens', 0), 'completion_tokens': usage_data.get('completion_tokens', 0), 'total_tokens': usage_data.get('total_tokens', 0)}}, ensure_ascii=False)}\n\n"
 
-            # Phase 2: LLM 실시간 스트리밍
-            full_answer = ""
-            usage_out: dict = {}
-            try:
-                async for token in llm.chat_completion_stream(
-                    messages=llm_messages,
-                    temperature=temperature,
-                    trace_name="stream_generate",
-                    user_id=user_id,
-                    usage_out=usage_out,
-                ):
-                    full_answer += token
-                    yield _sse_chunk(chunk_id, model, token, include_usage)
-            except Exception as e:
-                logger.error("[Stream] LLM streaming error: %s", e)
-                error_msg = f"\n\n(스트리밍 중 오류 발생: {e})"
-                yield _sse_chunk(chunk_id, model, error_msg, include_usage)
+                    yield "data: [DONE]\n\n"
+                    task.result()
+                    return
+                else:
+                    msg_type, data = t.result()
+                    chunk = _handle_oai_msg(msg_type, data, chunk_id, model, include_usage, usage_data)
+                    if chunk:
+                        yield chunk
 
-            # Phase 3: 참조 문헌 + 저작권 고지
-            citation = format_citation_text(sources)
-            if citation:
-                yield _sse_chunk(chunk_id, model, citation, include_usage)
-
-            # finish_reason: "stop" chunk
-            done_chunk = {
-                "id": chunk_id,
-                "object": "chat.completion.chunk",
-                "created": int(time.time()),
-                "model": model,
-                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
-            }
-            if include_usage:
-                done_chunk["usage"] = None
-            yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
-
-            # usage chunk (stream_options.include_usage=true 일 때만)
-            if include_usage:
-                usage_chunk = {
-                    "id": chunk_id,
-                    "object": "chat.completion.chunk",
-                    "created": int(time.time()),
-                    "model": model,
-                    "choices": [],
-                    "usage": {
-                        "prompt_tokens": usage_out.get("prompt_tokens", 0),
-                        "completion_tokens": usage_out.get("completion_tokens", 0),
-                        "total_tokens": usage_out.get("total_tokens", 0),
-                    },
-                }
-                yield f"data: {json.dumps(usage_chunk, ensure_ascii=False)}\n\n"
-
-            yield "data: [DONE]\n\n"
+    except Exception as e:
+        logger.error("[OAIStream] unexpected error: %s", e)
+        yield _sse_chunk(chunk_id, model, f"\n\n(오류: {e})", include_usage)
+        yield f"data: {json.dumps({'id': chunk_id, 'object': 'chat.completion.chunk', 'created': int(time.time()), 'model': model, 'choices': [{{'index': 0, 'delta': {{}}, 'finish_reason': 'stop', 'logprobs': None}}]}, ensure_ascii=False)}\n\n"
+        yield "data: [DONE]\n\n"
     finally:
+        if not task.done():
+            task.cancel()
         flush_langfuse()
+
+
+def _handle_oai_msg(msg_type, data, chunk_id, model, include_usage, usage_data):
+    """Queue 메시지를 OpenAI SSE chunk 문자열로 변환."""
+    if msg_type == "token":
+        return _sse_chunk(chunk_id, model, data, include_usage)
+    elif msg_type == "full_text":
+        # analytics 등 non-LLM 결과를 한번에 전송
+        return _sse_chunk(chunk_id, model, data, include_usage)
+    elif msg_type == "usage":
+        if data:
+            usage_data.update(data)
+    elif msg_type == "error":
+        return _sse_chunk(chunk_id, model, f"\n\n(처리 중 오류: {data})", include_usage)
+    elif msg_type == "error_token":
+        return _sse_chunk(chunk_id, model, f"\n\n(스트리밍 중 오류: {data})", include_usage)
+    return None
 
 
 def _sse_role_chunk(chunk_id: str, model: str, include_usage: bool = False) -> str:
