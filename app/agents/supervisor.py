@@ -16,7 +16,7 @@ from langgraph.graph import StateGraph, END
 from datetime import datetime
 
 from app.agents.state import AgentState
-from app.core.langfuse_client import observe, langfuse_context
+from app.core.langfuse_client import observe, langfuse_context, add_trace_tags
 from app.core.date_parser import extract_date_filters
 from app.core.tools import get_current_datetime, get_current_date_context
 from app.agents.common import llm_json_call
@@ -506,6 +506,13 @@ async def route_to_agent(state: AgentState) -> AgentState:
     result = await agent.ainvoke(state)
 
     state.update(result)
+
+    # Langfuse trace에 agent_type tag 추가 (사용 순서대로 누적)
+    agent_tags = list(state.get("metadata", {}).get("_agent_tags", []))
+    agent_tags.append(agent_type)
+    state["metadata"]["_agent_tags"] = agent_tags
+    add_trace_tags([f"agent:{agent_type}"])
+
     langfuse_context(output={
         "agent_type": agent_type,
         "answer_len": len(state.get("answer", "")),

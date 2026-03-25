@@ -133,3 +133,15 @@ def langfuse_context(**kwargs):
             client.update_current_span(**kwargs)
     except Exception:
         pass
+
+
+def add_trace_tags(tags: list[str]):
+    """현재 trace에 tags를 추가한다 (Langfuse UI 필터링/분석용)."""
+    try:
+        client = _get_client()
+        if client:
+            trace_id = client.get_current_trace_id()
+            if trace_id:
+                client._create_trace_tags_via_ingestion(trace_id=trace_id, tags=tags)
+    except Exception:
+        pass
