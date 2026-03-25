@@ -7,6 +7,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import settings
+from app.models.schemas import ChatRequest
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -24,3 +25,18 @@ async def verify_api_key(
             detail="Invalid or missing API key",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def build_chat_state(request: ChatRequest) -> dict:
+    """ChatRequest → supervisor state 변환 (chat, chat_v2 공용)."""
+    state = {
+        "query": request.query,
+        "user_id": request.user_id,
+        "filters": request.filters,
+        "metadata": {},
+    }
+    if request.messages:
+        state["metadata"]["messages"] = [m.model_dump() for m in request.messages]
+    if request.agent_type:
+        state["metadata"]["agent_type"] = request.agent_type
+    return state

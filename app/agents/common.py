@@ -137,6 +137,14 @@ def extract_paper_title_from_history(state: dict) -> str | None:
     return None
 
 
+def _accumulate_usage(state: dict, usage_out: dict):
+    """토큰 사용량을 state.metadata.usage에 누적한다 (덮어쓰지 않음)."""
+    metadata = state.setdefault("metadata", {})
+    existing = metadata.setdefault("usage", {})
+    for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
+        existing[key] = existing.get(key, 0) + usage_out.get(key, 0)
+
+
 def inject_date_context(system_prompt: str, state: dict | None = None) -> str:
     """시스템 프롬프트에 현재 서버 날짜/시간 및 대화 히스토리를 주입한다.
 
@@ -264,7 +272,7 @@ async def llm_json_call(
         usage_out=usage_out,
     )
     if state is not None and usage_out:
-        state.setdefault("metadata", {})["usage"] = usage_out
+        _accumulate_usage(state, usage_out)
     cleaned = raw.strip()
     if "```json" in cleaned:
         cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
@@ -309,9 +317,9 @@ async def llm_text_call(
         user_id=user_id,
         usage_out=usage_out,
     )
-    # usage를 state metadata에 저장 → API 응답에서 활용
+    # usage를 state metadata에 누적 저장 → API 응답에서 활용
     if state is not None and usage_out:
-        state.setdefault("metadata", {})["usage"] = usage_out
+        _accumulate_usage(state, usage_out)
     return result
 
 

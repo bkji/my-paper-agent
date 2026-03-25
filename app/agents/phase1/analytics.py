@@ -338,10 +338,16 @@ async def generate_response(state: AgentState) -> AgentState:
             state["sources"] = []
         return state
 
+    usage_out: dict = {}
     answer = await llm.chat_completion(
         messages=messages, temperature=0.3,
         trace_name="analytics_generate", user_id=user_id,
+        usage_out=usage_out,
     )
+
+    if usage_out:
+        from app.agents.common import _accumulate_usage
+        _accumulate_usage(state, usage_out)
 
     state["answer"] = answer
     # 논문 목록인 경우 sources 생성

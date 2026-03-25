@@ -16,7 +16,7 @@ from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
 from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
-from app.api.deps import verify_api_key
+from app.api.deps import verify_api_key, build_chat_state
 from app.core import llm
 from app.core.langfuse_client import observe, trace_attributes, flush_langfuse
 from app.models.schemas import ChatRequest, ChatResponse, UsageInfo
@@ -26,21 +26,6 @@ router = APIRouter()
 
 
 # ── 헬퍼 ─────────────────────────────────────────────────────────
-
-
-def _build_state(request: ChatRequest) -> dict:
-    """ChatRequest → supervisor state 변환."""
-    state = {
-        "query": request.query,
-        "user_id": request.user_id,
-        "filters": request.filters,
-        "metadata": {},
-    }
-    if request.messages:
-        state["metadata"]["messages"] = [m.model_dump() for m in request.messages]
-    if request.agent_type:
-        state["metadata"]["agent_type"] = request.agent_type
-    return state
 
 
 def _sse(event: str, data: dict) -> ServerSentEvent:
@@ -129,7 +114,7 @@ async def _stream_response_v2(state: dict):
                 if sources:
                     yield _sse("sources", {
                         "sources": [
-                            s if isinstance(s, dict) else s.dict()
+                            s if isinstance(s, dict) else s.model_dump()
                             for s in sources
                         ],
                     })
@@ -169,7 +154,7 @@ async def _stream_response_v2(state: dict):
             if sources:
                 yield _sse("sources", {
                     "sources": [
-                        s if isinstance(s, dict) else s.dict()
+                        s if isinstance(s, dict) else s.model_dump()
                         for s in sources
                     ],
                 })
@@ -220,7 +205,7 @@ async def chat_v2(request: ChatRequest):
         request.agent_type, request.stream, request.query[:100],
     )
 
-    state = _build_state(request)
+    state = build_chat_state(request)
 
     if request.stream:
         state["metadata"]["_stream_mode"] = True

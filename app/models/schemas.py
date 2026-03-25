@@ -23,10 +23,14 @@ class ChatRequest(BaseModel):
 class SourceDocument(BaseModel):
     paper_id: str
     title: str
+    author: Optional[str] = None
     doi: Optional[str] = None
     chunk_id: int
     chunk_text: str
     score: float
+    score_rrf: Optional[float] = None
+    score_dense: Optional[float] = None
+    score_sparse: Optional[float] = None
 
 
 class UsageInfo(BaseModel):

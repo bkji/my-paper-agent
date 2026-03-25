@@ -178,12 +178,17 @@ async def generate(state: AgentState) -> AgentState:
         state["sources"] = build_sources(search_results)
         return state
 
+    usage_out: dict = {}
     answer = await llm.chat_completion(
         messages=messages, temperature=0.3,
         trace_name="paper_qa_generate", user_id=user_id,
+        usage_out=usage_out,
     )
 
     state["answer"] = answer
+    if usage_out:
+        from app.agents.common import _accumulate_usage
+        _accumulate_usage(state, usage_out)
     state["sources"] = build_sources(search_results)
     logger.info("[PaperQA] generate done: answer_len=%d", len(answer))
     return state
