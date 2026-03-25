@@ -126,10 +126,31 @@ def trace_attributes(
 
 
 def langfuse_context(**kwargs):
-    """현재 @observe span에 추가 정보를 기록한다."""
+    """현재 @observe span에 추가 정보를 기록한다.
+
+    generation 전용 파라미터(usage, usage_details, model, model_parameters,
+    cost_details, completion_start_time, prompt)가 포함되어 있으면
+    update_current_generation()을 호출하고, 그렇지 않으면
+    update_current_span()을 호출한다.
+
+    편의를 위해 'usage' 키는 자동으로 'usage_details'로 변환된다.
+    """
     try:
         client = _get_client()
-        if client:
+        if not client:
+            return
+
+        # 'usage' → 'usage_details' 자동 변환 (Langfuse v4+)
+        if "usage" in kwargs and "usage_details" not in kwargs:
+            kwargs["usage_details"] = kwargs.pop("usage")
+
+        _generation_keys = {
+            "usage_details", "cost_details", "model",
+            "model_parameters", "completion_start_time", "prompt",
+        }
+        if _generation_keys & kwargs.keys():
+            client.update_current_generation(**kwargs)
+        else:
             client.update_current_span(**kwargs)
     except Exception:
         pass
