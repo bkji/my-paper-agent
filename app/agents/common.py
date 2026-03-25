@@ -255,12 +255,16 @@ async def llm_json_call(
         {"role": "system", "content": inject_date_context(system_prompt, state)},
         {"role": "user", "content": user_prompt},
     ]
+    usage_out: dict = {}
     raw = await llm.chat_completion(
         messages=messages,
         temperature=temperature,
         trace_name=trace_name,
         user_id=user_id,
+        usage_out=usage_out,
     )
+    if state is not None and usage_out:
+        state.setdefault("metadata", {})["usage"] = usage_out
     cleaned = raw.strip()
     if "```json" in cleaned:
         cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
@@ -297,12 +301,18 @@ async def llm_text_call(
         state["metadata"]["_llm_temperature"] = temperature
         return ""
 
-    return await llm.chat_completion(
+    usage_out: dict = {}
+    result = await llm.chat_completion(
         messages=messages,
         temperature=temperature,
         trace_name=trace_name,
         user_id=user_id,
+        usage_out=usage_out,
     )
+    # usage를 state metadata에 저장 → API 응답에서 활용
+    if state is not None and usage_out:
+        state.setdefault("metadata", {})["usage"] = usage_out
+    return result
 
 
 def _build_filter_expr(filters: dict | None) -> str | None:

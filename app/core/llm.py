@@ -33,8 +33,14 @@ async def chat_completion(
     max_tokens: int = 4096,
     trace_name: str = "llm_chat_completion",
     user_id: str | None = None,
+    usage_out: dict | None = None,
 ) -> str:
-    """OpenAI-compatible chat completion을 호출한다."""
+    """OpenAI-compatible chat completion을 호출한다.
+
+    Args:
+        usage_out: 전달하면 토큰 사용량을 이 dict에 저장한다.
+                   {"prompt_tokens": N, "completion_tokens": N, "total_tokens": N}
+    """
     logger.info(
         "chat_completion called: model=%s, messages=%d, temperature=%s",
         settings.LLM_MODEL, len(messages), temperature,
@@ -60,6 +66,12 @@ async def chat_completion(
 
         result = data["choices"][0]["message"]["content"]
         usage = data.get("usage", {})
+
+        # 호출자에게 usage 전달
+        if usage_out is not None:
+            usage_out["prompt_tokens"] = usage.get("prompt_tokens", 0)
+            usage_out["completion_tokens"] = usage.get("completion_tokens", 0)
+            usage_out["total_tokens"] = usage.get("total_tokens", 0)
 
         langfuse_context(
             output={"response": result[:500]},
