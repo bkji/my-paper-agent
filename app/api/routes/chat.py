@@ -12,7 +12,7 @@ from app.agents.citation_agent import format_citation_text
 from app.api.deps import verify_api_key
 from app.core import llm
 from app.core.langfuse_client import observe, trace_attributes
-from app.models.schemas import ChatRequest, ChatResponse
+from app.models.schemas import ChatRequest, ChatResponse, UsageInfo
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,10 +56,12 @@ async def chat(request: ChatRequest):
     with trace_attributes(user_id=request.user_id, metadata={"agent_type": request.agent_type or "auto"}):
         result = await supervisor.ainvoke(state)
 
+    usage = (result.get("metadata") or {}).get("usage") or {}
     return ChatResponse(
         answer=result.get("answer", ""),
         sources=result.get("sources"),
         trace_id=result.get("trace_id"),
+        usage=UsageInfo(**usage) if usage else None,
     )
 
 
@@ -105,19 +107,26 @@ async def _stream_response(state: dict):
         yield _sse_event("token", {"content": answer})
         if sources:
             yield _sse_event("sources", {"sources": [s if isinstance(s, dict) else s.dict() for s in sources]})
-        yield _sse_event("done", {"stream_id": stream_id})
+        # analytics 등 non-LLM 에이전트의 usage
+        pre_usage = (result.get("metadata") or {}).get("usage") or {}
+        yield _sse_event("done", {
+            "stream_id": stream_id,
+            "usage": pre_usage if pre_usage else None,
+        })
         return
 
     # Phase 2: LLM 실시간 스트리밍
     yield _sse_event("status", {"message": "답변 생성 중..."})
 
     full_answer = ""
+    usage_out: dict = {}
     try:
         async for token in llm.chat_completion_stream(
             messages=llm_messages,
             temperature=temperature,
             trace_name="chat_stream_generate",
             user_id=state.get("user_id"),
+            usage_out=usage_out,
         ):
             full_answer += token
             yield _sse_event("token", {"content": token})
@@ -134,4 +143,7 @@ async def _stream_response(state: dict):
     if sources:
         yield _sse_event("sources", {"sources": [s if isinstance(s, dict) else s.dict() for s in sources]})
 
-    yield _sse_event("done", {"stream_id": stream_id})
+    yield _sse_event("done", {
+        "stream_id": stream_id,
+        "usage": usage_out if usage_out else None,
+    })

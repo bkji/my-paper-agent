@@ -109,8 +109,14 @@ async def chat_completion_stream(
     max_tokens: int = 4096,
     trace_name: str = "llm_chat_completion_stream",
     user_id: str | None = None,
+    usage_out: dict | None = None,
 ) -> AsyncIterator[str]:
-    """LM Studio streaming chat completion."""
+    """LM Studio streaming chat completion.
+
+    Args:
+        usage_out: 전달하면 스트리밍 완료 후 토큰 사용량을 이 dict에 저장한다.
+                   async for 루프 종료 후 참조하면 된다.
+    """
     logger.info("chat_completion_stream called: model=%s", settings.LLM_MODEL)
 
     langfuse_context(
@@ -144,13 +150,19 @@ async def chat_completion_stream(
                 full_response += content
                 yield content
             # 일부 서버는 마지막 chunk에 usage를 포함
-            if "usage" in chunk:
+            if "usage" in chunk and chunk["usage"]:
                 usage_data = chunk["usage"]
 
     # 토큰 사용량 (서버가 제공하지 않으면 추정)
     prompt_tokens = usage_data.get("prompt_tokens", 0)
     completion_tokens = usage_data.get("completion_tokens", 0) or len(full_response) // 4
     total_tokens = usage_data.get("total_tokens", 0) or (prompt_tokens + completion_tokens)
+
+    # 호출자에게 usage 전달
+    if usage_out is not None:
+        usage_out["prompt_tokens"] = prompt_tokens
+        usage_out["completion_tokens"] = completion_tokens
+        usage_out["total_tokens"] = total_tokens
 
     langfuse_context(
         output={"response": full_response[:500]},

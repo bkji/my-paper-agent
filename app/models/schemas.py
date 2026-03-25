@@ -29,10 +29,17 @@ class SourceDocument(BaseModel):
     score: float
 
 
+class UsageInfo(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+
 class ChatResponse(BaseModel):
     answer: str
     sources: Optional[list[SourceDocument]] = None
     trace_id: Optional[str] = None
+    usage: Optional[UsageInfo] = None
 
 
 class IngestRequest(BaseModel):

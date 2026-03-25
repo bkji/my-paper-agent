@@ -40,12 +40,17 @@ class OAIMessage(BaseModel):
     content: str
 
 
+class OAIStreamOptions(BaseModel):
+    include_usage: Optional[bool] = False
+
+
 class OAIRequest(BaseModel):
     model: str = MODEL_ID
     messages: list[OAIMessage]
     temperature: Optional[float] = 0.7
     max_tokens: Optional[int] = None
     stream: Optional[bool] = False
+    stream_options: Optional[OAIStreamOptions] = None
     user: Optional[str] = None
 
 
@@ -127,15 +132,17 @@ async def chat_completions(request: Request, body: OAIRequest):
 
     if not state["query"]:
         if body.stream:
+            include_usage = bool(body.stream_options and body.stream_options.include_usage)
             return StreamingResponse(
-                _fake_stream("질문을 입력해 주세요.", body.model),
+                _fake_stream("질문을 입력해 주세요.", body.model, include_usage=include_usage),
                 media_type="text/event-stream",
             )
         return _make_response("질문을 입력해 주세요.", body.model)
 
     if body.stream:
+        include_usage = bool(body.stream_options and body.stream_options.include_usage)
         return StreamingResponse(
-            _real_stream(state, body.model, user_id),
+            _real_stream(state, body.model, user_id, include_usage=include_usage),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -151,12 +158,14 @@ async def chat_completions(request: Request, body: OAIRequest):
     return _make_response(result.get("answer", ""), body.model, usage=usage)
 
 
-async def _real_stream(state: dict, model: str, user_id: str = ""):
+async def _real_stream(
+    state: dict, model: str, user_id: str = "", include_usage: bool = False,
+):
     """실시간 스트리밍: 검색/분류 후 LLM 응답을 토큰 단위로 전송한다."""
     chunk_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
     # 첫 번째 chunk: role 전송 (OpenAI 스펙 필수)
-    yield _sse_role_chunk(chunk_id, model)
+    yield _sse_role_chunk(chunk_id, model, include_usage)
 
     # Phase 1: 검색 + 분류 (LLM 최종 호출은 스킵)
     state["metadata"]["_stream_mode"] = True
@@ -173,32 +182,34 @@ async def _real_stream(state: dict, model: str, user_id: str = ""):
         answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
         citation = format_citation_text(sources)
         full_text = answer.rstrip() + citation
-        async for chunk in _fake_stream(full_text, model, send_role=False):
+        async for chunk in _fake_stream(full_text, model, send_role=False, include_usage=include_usage):
             yield chunk
         return
 
     # Phase 2: LLM 실시간 스트리밍
     full_answer = ""
+    usage_out: dict = {}
     try:
         async for token in llm.chat_completion_stream(
             messages=llm_messages,
             temperature=temperature,
             trace_name="stream_generate",
             user_id=user_id,
+            usage_out=usage_out,
         ):
             full_answer += token
-            yield _sse_chunk(chunk_id, model, token)
+            yield _sse_chunk(chunk_id, model, token, include_usage)
     except Exception as e:
         logger.error("[Stream] LLM streaming error: %s", e)
         error_msg = f"\n\n(스트리밍 중 오류 발생: {e})"
-        yield _sse_chunk(chunk_id, model, error_msg)
+        yield _sse_chunk(chunk_id, model, error_msg, include_usage)
 
     # Phase 3: 참조 문헌 + 저작권 고지
     citation = format_citation_text(sources)
     if citation:
-        yield _sse_chunk(chunk_id, model, citation)
+        yield _sse_chunk(chunk_id, model, citation, include_usage)
 
-    # Done
+    # finish_reason: "stop" chunk
     done_chunk = {
         "id": chunk_id,
         "object": "chat.completion.chunk",
@@ -206,11 +217,30 @@ async def _real_stream(state: dict, model: str, user_id: str = ""):
         "model": model,
         "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
     }
+    if include_usage:
+        done_chunk["usage"] = None
     yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
+
+    # usage chunk (stream_options.include_usage=true 일 때만)
+    if include_usage:
+        usage_chunk = {
+            "id": chunk_id,
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [],
+            "usage": {
+                "prompt_tokens": usage_out.get("prompt_tokens", 0),
+                "completion_tokens": usage_out.get("completion_tokens", 0),
+                "total_tokens": usage_out.get("total_tokens", 0),
+            },
+        }
+        yield f"data: {json.dumps(usage_chunk, ensure_ascii=False)}\n\n"
+
     yield "data: [DONE]\n\n"
 
 
-def _sse_role_chunk(chunk_id: str, model: str) -> str:
+def _sse_role_chunk(chunk_id: str, model: str, include_usage: bool = False) -> str:
     """스트리밍 첫 번째 chunk: role=assistant 전송 (OpenAI 스펙 필수)."""
     chunk = {
         "id": chunk_id,
@@ -219,10 +249,12 @@ def _sse_role_chunk(chunk_id: str, model: str) -> str:
         "model": model,
         "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": None, "logprobs": None}],
     }
+    if include_usage:
+        chunk["usage"] = None
     return f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
 
-def _sse_chunk(chunk_id: str, model: str, content: str) -> str:
+def _sse_chunk(chunk_id: str, model: str, content: str, include_usage: bool = False) -> str:
     """SSE 포맷의 스트리밍 청크를 생성한다."""
     chunk = {
         "id": chunk_id,
@@ -231,21 +263,26 @@ def _sse_chunk(chunk_id: str, model: str, content: str) -> str:
         "model": model,
         "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": None, "logprobs": None}],
     }
+    if include_usage:
+        chunk["usage"] = None
     return f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
 
-async def _fake_stream(content: str, model: str, send_role: bool = True):
+async def _fake_stream(
+    content: str, model: str, send_role: bool = True, include_usage: bool = False,
+):
     """완성된 텍스트를 줄 단위로 스트리밍한다 (fallback용)."""
     chunk_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
     # 첫 번째 chunk: role 전송
     if send_role:
-        yield _sse_role_chunk(chunk_id, model)
+        yield _sse_role_chunk(chunk_id, model, include_usage)
 
     sentences = content.split("\n")
     for sentence in sentences:
-        yield _sse_chunk(chunk_id, model, sentence + "\n")
+        yield _sse_chunk(chunk_id, model, sentence + "\n", include_usage)
 
+    # finish_reason: "stop" chunk
     done_chunk = {
         "id": chunk_id,
         "object": "chat.completion.chunk",
@@ -253,7 +290,22 @@ async def _fake_stream(content: str, model: str, send_role: bool = True):
         "model": model,
         "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
     }
+    if include_usage:
+        done_chunk["usage"] = None
     yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
+
+    # usage chunk (fake_stream은 토큰 사용량 불명이므로 0으로 전송)
+    if include_usage:
+        usage_chunk = {
+            "id": chunk_id,
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [],
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        }
+        yield f"data: {json.dumps(usage_chunk, ensure_ascii=False)}\n\n"
+
     yield "data: [DONE]\n\n"
 
 
