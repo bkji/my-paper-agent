@@ -19,7 +19,7 @@ import time
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -46,6 +46,29 @@ class OAIRequest(BaseModel):
     temperature: Optional[float] = 0.7
     max_tokens: Optional[int] = None
     stream: Optional[bool] = False
+    user: Optional[str] = None
+
+
+def _extract_user_id(request: Request, body: OAIRequest) -> str:
+    """Open WebUI 요청에서 실제 사용자 ID를 추출한다.
+
+    우선순위:
+    1. body.user 필드 (OpenAI API 표준)
+    2. X-OpenWebUI-User-Name 헤더
+    3. X-OpenWebUI-User-Email 헤더
+    4. fallback: PC 이름 (get_default_user_id)
+    """
+    from app.core.langfuse_client import get_default_user_id
+
+    if body.user:
+        return body.user
+    header_name = request.headers.get("x-openwebui-user-name")
+    if header_name:
+        return header_name
+    header_email = request.headers.get("x-openwebui-user-email")
+    if header_email:
+        return header_email
+    return get_default_user_id()
 
 
 @router.get("/models", dependencies=[Depends(verify_api_key)])
@@ -63,7 +86,7 @@ async def list_models():
     }
 
 
-def _build_state(request: OAIRequest) -> dict:
+def _build_state(body: OAIRequest, user_id: str) -> dict:
     """요청 메시지에서 query를 추출하고, messages를 supervisor에 넘긴다.
 
     대화 히스토리 조립(압축, 포맷팅)은 supervisor.build_history에서 통합 처리한다.
@@ -72,13 +95,13 @@ def _build_state(request: OAIRequest) -> dict:
     system_ctx = ""
     chat_messages: list[dict] = []
 
-    for msg in request.messages:
+    for msg in body.messages:
         if msg.role == "system":
             system_ctx = msg.content
         elif msg.role in ("user", "assistant"):
             chat_messages.append({"role": msg.role, "content": msg.content})
 
-    for msg in reversed(request.messages):
+    for msg in reversed(body.messages):
         if msg.role == "user":
             query = msg.content
             break
@@ -88,7 +111,7 @@ def _build_state(request: OAIRequest) -> dict:
 
     state = {
         "query": query,
-        "user_id": "openwebui",
+        "user_id": user_id,
         "filters": {},
         "metadata": {},
     }
@@ -100,20 +123,21 @@ def _build_state(request: OAIRequest) -> dict:
 
 
 @router.post("/chat/completions", dependencies=[Depends(verify_api_key)])
-async def chat_completions(request: OAIRequest):
-    state = _build_state(request)
+async def chat_completions(request: Request, body: OAIRequest):
+    user_id = _extract_user_id(request, body)
+    state = _build_state(body, user_id)
 
     if not state["query"]:
-        if request.stream:
+        if body.stream:
             return StreamingResponse(
-                _fake_stream("질문을 입력해 주세요.", request.model),
+                _fake_stream("질문을 입력해 주세요.", body.model),
                 media_type="text/event-stream",
             )
-        return _make_response("질문을 입력해 주세요.", request.model)
+        return _make_response("질문을 입력해 주세요.", body.model)
 
-    if request.stream:
+    if body.stream:
         return StreamingResponse(
-            _real_stream(state, request.model),
+            _real_stream(state, body.model, user_id),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -122,20 +146,20 @@ async def chat_completions(request: OAIRequest):
         )
 
     # Non-streaming: 기존 방식
-    with trace_attributes(user_id="openwebui", metadata={"source": "openai_compat"}):
+    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}):
         result = await supervisor.ainvoke(state)
 
-    return _make_response(result.get("answer", ""), request.model)
+    return _make_response(result.get("answer", ""), body.model)
 
 
-async def _real_stream(state: dict, model: str):
+async def _real_stream(state: dict, model: str, user_id: str = ""):
     """실시간 스트리밍: 검색/분류 후 LLM 응답을 토큰 단위로 전송한다."""
     chunk_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
     # Phase 1: 검색 + 분류 (LLM 최종 호출은 스킵)
     state["metadata"]["_stream_mode"] = True
 
-    with trace_attributes(user_id="openwebui", metadata={"source": "openai_compat_stream"}):
+    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat_stream"}):
         result = await supervisor.ainvoke(state)
 
     llm_messages = (result.get("metadata") or {}).get("_llm_messages")
@@ -158,7 +182,7 @@ async def _real_stream(state: dict, model: str):
             messages=llm_messages,
             temperature=temperature,
             trace_name="stream_generate",
-            user_id="openwebui",
+            user_id=user_id,
         ):
             full_answer += token
             yield _sse_chunk(chunk_id, model, token)
