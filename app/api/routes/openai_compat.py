@@ -147,12 +147,16 @@ async def chat_completions(request: Request, body: OAIRequest):
     with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}):
         result = await supervisor.ainvoke(state)
 
-    return _make_response(result.get("answer", ""), body.model)
+    usage = (result.get("metadata") or {}).get("usage") or {}
+    return _make_response(result.get("answer", ""), body.model, usage=usage)
 
 
 async def _real_stream(state: dict, model: str, user_id: str = ""):
     """실시간 스트리밍: 검색/분류 후 LLM 응답을 토큰 단위로 전송한다."""
     chunk_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
+
+    # 첫 번째 chunk: role 전송 (OpenAI 스펙 필수)
+    yield _sse_role_chunk(chunk_id, model)
 
     # Phase 1: 검색 + 분류 (LLM 최종 호출은 스킵)
     state["metadata"]["_stream_mode"] = True
@@ -169,7 +173,7 @@ async def _real_stream(state: dict, model: str, user_id: str = ""):
         answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
         citation = format_citation_text(sources)
         full_text = answer.rstrip() + citation
-        async for chunk in _fake_stream(full_text, model):
+        async for chunk in _fake_stream(full_text, model, send_role=False):
             yield chunk
         return
 
@@ -200,10 +204,22 @@ async def _real_stream(state: dict, model: str, user_id: str = ""):
         "object": "chat.completion.chunk",
         "created": int(time.time()),
         "model": model,
-        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
     }
     yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
+
+
+def _sse_role_chunk(chunk_id: str, model: str) -> str:
+    """스트리밍 첫 번째 chunk: role=assistant 전송 (OpenAI 스펙 필수)."""
+    chunk = {
+        "id": chunk_id,
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": None, "logprobs": None}],
+    }
+    return f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
 
 def _sse_chunk(chunk_id: str, model: str, content: str) -> str:
@@ -213,16 +229,20 @@ def _sse_chunk(chunk_id: str, model: str, content: str) -> str:
         "object": "chat.completion.chunk",
         "created": int(time.time()),
         "model": model,
-        "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": None}],
+        "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": None, "logprobs": None}],
     }
     return f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
 
-async def _fake_stream(content: str, model: str):
+async def _fake_stream(content: str, model: str, send_role: bool = True):
     """완성된 텍스트를 줄 단위로 스트리밍한다 (fallback용)."""
     chunk_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
-    sentences = content.split("\n")
 
+    # 첫 번째 chunk: role 전송
+    if send_role:
+        yield _sse_role_chunk(chunk_id, model)
+
+    sentences = content.split("\n")
     for sentence in sentences:
         yield _sse_chunk(chunk_id, model, sentence + "\n")
 
@@ -231,13 +251,14 @@ async def _fake_stream(content: str, model: str):
         "object": "chat.completion.chunk",
         "created": int(time.time()),
         "model": model,
-        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
     }
     yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
 
 
-def _make_response(content: str, model: str) -> dict:
+def _make_response(content: str, model: str, usage: dict | None = None) -> dict:
+    usage = usage or {}
     return {
         "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
         "object": "chat.completion",
@@ -248,7 +269,12 @@ def _make_response(content: str, model: str) -> dict:
                 "index": 0,
                 "message": {"role": "assistant", "content": content},
                 "finish_reason": "stop",
+                "logprobs": None,
             }
         ],
-        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        "usage": {
+            "prompt_tokens": usage.get("prompt_tokens", 0),
+            "completion_tokens": usage.get("completion_tokens", 0),
+            "total_tokens": usage.get("total_tokens", 0),
+        },
     }
