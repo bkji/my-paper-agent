@@ -19,7 +19,7 @@ import re
 from langgraph.graph import StateGraph, END
 
 from app.agents.state import AgentState
-from app.agents.common import inject_date_context, build_sources, llm_json_call
+from app.agents.common import inject_date_context, build_sources, llm_json_call, _accumulate_usage
 from app.core import llm, database
 
 logger = logging.getLogger(__name__)
@@ -346,7 +346,6 @@ async def generate_response(state: AgentState) -> AgentState:
     )
 
     if usage_out:
-        from app.agents.common import _accumulate_usage
         _accumulate_usage(state, usage_out)
 
     state["answer"] = answer

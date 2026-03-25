@@ -226,48 +226,71 @@ async def _real_stream(
     task = asyncio.create_task(_run_oai_stream_pipeline(state, queue, user_id))
 
     try:
-        while True:
-            done_tasks, _ = await asyncio.wait(
-                [asyncio.ensure_future(queue.get()), task],
-                return_when=asyncio.FIRST_COMPLETED,
+        while not task.done():
+            get_fut = asyncio.ensure_future(queue.get())
+            done_tasks, pending = await asyncio.wait(
+                [get_fut, task], return_when=asyncio.FIRST_COMPLETED,
             )
+            for p in pending:
+                if p is get_fut:
+                    p.cancel()
 
             for t in done_tasks:
-                if t is task:
-                    # pipeline 완료 — 남은 queue 소진
-                    while not queue.empty():
-                        msg_type, data = queue.get_nowait()
-                        chunk = _handle_oai_msg(msg_type, data, chunk_id, model, include_usage, usage_data)
-                        if chunk:
-                            yield chunk
-
-                    # finish_reason: "stop"
-                    done_chunk = {
-                        "id": chunk_id, "object": "chat.completion.chunk",
-                        "created": int(time.time()), "model": model,
-                        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
-                    }
-                    if include_usage:
-                        done_chunk["usage"] = None
-                    yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
-
-                    # usage chunk
-                    if include_usage:
-                        yield f"data: {json.dumps({'id': chunk_id, 'object': 'chat.completion.chunk', 'created': int(time.time()), 'model': model, 'choices': [], 'usage': {'prompt_tokens': usage_data.get('prompt_tokens', 0), 'completion_tokens': usage_data.get('completion_tokens', 0), 'total_tokens': usage_data.get('total_tokens', 0)}}, ensure_ascii=False)}\n\n"
-
-                    yield "data: [DONE]\n\n"
-                    task.result()
-                    return
-                else:
+                if t is not task and not t.cancelled():
                     msg_type, data = t.result()
                     chunk = _handle_oai_msg(msg_type, data, chunk_id, model, include_usage, usage_data)
                     if chunk:
                         yield chunk
 
+        # task 완료 후 queue 소진
+        while not queue.empty():
+            msg_type, data = queue.get_nowait()
+            chunk = _handle_oai_msg(msg_type, data, chunk_id, model, include_usage, usage_data)
+            if chunk:
+                yield chunk
+
+        # task 예외 확인
+        try:
+            task.result()
+        except Exception as e:
+            logger.error("[OAIStream] pipeline error: %s", e)
+            yield _sse_chunk(chunk_id, model, f"\n\n(파이프라인 오류: {e})", include_usage)
+
+        # finish_reason: "stop"
+        done_chunk = {
+            "id": chunk_id, "object": "chat.completion.chunk",
+            "created": int(time.time()), "model": model,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
+        }
+        if include_usage:
+            done_chunk["usage"] = None
+        yield f"data: {json.dumps(done_chunk, ensure_ascii=False)}\n\n"
+
+        # usage chunk
+        if include_usage:
+            usage_chunk = {
+                "id": chunk_id, "object": "chat.completion.chunk",
+                "created": int(time.time()), "model": model,
+                "choices": [],
+                "usage": {
+                    "prompt_tokens": usage_data.get("prompt_tokens", 0),
+                    "completion_tokens": usage_data.get("completion_tokens", 0),
+                    "total_tokens": usage_data.get("total_tokens", 0),
+                },
+            }
+            yield f"data: {json.dumps(usage_chunk, ensure_ascii=False)}\n\n"
+
+        yield "data: [DONE]\n\n"
+
     except Exception as e:
         logger.error("[OAIStream] unexpected error: %s", e)
         yield _sse_chunk(chunk_id, model, f"\n\n(오류: {e})", include_usage)
-        yield f"data: {json.dumps({'id': chunk_id, 'object': 'chat.completion.chunk', 'created': int(time.time()), 'model': model, 'choices': [{{'index': 0, 'delta': {{}}, 'finish_reason': 'stop', 'logprobs': None}}]}, ensure_ascii=False)}\n\n"
+        stop_chunk = {
+            "id": chunk_id, "object": "chat.completion.chunk",
+            "created": int(time.time()), "model": model,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop", "logprobs": None}],
+        }
+        yield f"data: {json.dumps(stop_chunk, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
     finally:
         if not task.done():

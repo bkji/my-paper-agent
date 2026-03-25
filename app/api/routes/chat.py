@@ -2,7 +2,6 @@
 import asyncio
 import json
 import logging
-import time
 import uuid
 
 from fastapi import APIRouter, Depends
@@ -126,30 +125,42 @@ async def _stream_response(state: dict):
     task = asyncio.create_task(_run_stream_pipeline(state, queue))
 
     try:
-        while True:
-            done_tasks, _ = await asyncio.wait(
-                [asyncio.ensure_future(queue.get()), task],
-                return_when=asyncio.FIRST_COMPLETED,
+        while not task.done():
+            # queue.get()과 task 완료를 동시 대기
+            get_fut = asyncio.ensure_future(queue.get())
+            done_tasks, pending = await asyncio.wait(
+                [get_fut, task], return_when=asyncio.FIRST_COMPLETED,
             )
+            # 미완료 future 정리 (누수 방지)
+            for p in pending:
+                if p is get_fut:
+                    p.cancel()
 
             for t in done_tasks:
-                if t is task:
-                    while not queue.empty():
-                        msg_type, data = queue.get_nowait()
-                        event = _handle_msg(msg_type, data, usage_data)
-                        if event:
-                            yield event
-                    yield _sse_event("done", {
-                        "stream_id": stream_id,
-                        "usage": usage_data if usage_data else None,
-                    })
-                    task.result()
-                    return
-                else:
+                if t is not task and not t.cancelled():
                     msg_type, data = t.result()
                     event = _handle_msg(msg_type, data, usage_data)
                     if event:
                         yield event
+
+        # task 완료 후 queue에 남은 메시지 소진
+        while not queue.empty():
+            msg_type, data = queue.get_nowait()
+            event = _handle_msg(msg_type, data, usage_data)
+            if event:
+                yield event
+
+        # task 예외 확인 (있으면 에러 이벤트 전송)
+        try:
+            task.result()
+        except Exception as e:
+            logger.error("[ChatStream] pipeline error: %s", e)
+            yield _sse_event("error", {"message": f"파이프라인 오류: {e}"})
+
+        yield _sse_event("done", {
+            "stream_id": stream_id,
+            "usage": usage_data if usage_data else None,
+        })
 
     except Exception as e:
         logger.error("[ChatStream] unexpected error: %s", e)

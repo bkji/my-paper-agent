@@ -150,34 +150,41 @@ async def _stream_response_v2(state: dict):
     task = asyncio.create_task(_run_stream_pipeline(state, queue))
 
     try:
-        while True:
-            # pipeline 완료 확인 + queue 대기를 동시에
-            done_tasks, _ = await asyncio.wait(
-                [asyncio.ensure_future(queue.get()), task],
-                return_when=asyncio.FIRST_COMPLETED,
+        while not task.done():
+            get_fut = asyncio.ensure_future(queue.get())
+            done_tasks, pending = await asyncio.wait(
+                [get_fut, task], return_when=asyncio.FIRST_COMPLETED,
             )
+            for p in pending:
+                if p is get_fut:
+                    p.cancel()
 
             for t in done_tasks:
-                if t is task:
-                    # pipeline 완료 — queue에 남은 항목 처리
-                    while not queue.empty():
-                        msg_type, data = queue.get_nowait()
-                        yield _handle_queue_msg(msg_type, data, usage_data)
-                    # done 이벤트 전송 후 종료
-                    yield _sse("done", {
-                        "stream_id": stream_id,
-                        "elapsed_ms": _elapsed_ms(t_start),
-                        "usage": usage_data if usage_data else None,
-                    })
-                    # task에서 발생한 예외가 있으면 raise
-                    task.result()
-                    return
-                else:
-                    # queue에서 메시지 수신
+                if t is not task and not t.cancelled():
                     msg_type, data = t.result()
                     event = _handle_queue_msg(msg_type, data, usage_data)
                     if event:
                         yield event
+
+        # task 완료 후 queue 소진
+        while not queue.empty():
+            msg_type, data = queue.get_nowait()
+            event = _handle_queue_msg(msg_type, data, usage_data)
+            if event:
+                yield event
+
+        # task 예외 확인
+        try:
+            task.result()
+        except Exception as e:
+            logger.error("[ChatStreamV2] pipeline error: %s", e)
+            yield _sse("error", {"message": f"파이프라인 오류: {e}"})
+
+        yield _sse("done", {
+            "stream_id": stream_id,
+            "elapsed_ms": _elapsed_ms(t_start),
+            "usage": usage_data if usage_data else None,
+        })
 
     except Exception as e:
         logger.error("[ChatStreamV2] unexpected error: %s", e)
