@@ -58,8 +58,6 @@ def _extract_user_id(request: Request, body: OAIRequest) -> str:
     3. X-OpenWebUI-User-Email 헤더
     4. fallback: PC 이름 (get_default_user_id)
     """
-    from app.core.langfuse_client import get_default_user_id
-
     if body.user:
         return body.user
     header_name = request.headers.get("x-openwebui-user-name")
@@ -68,7 +66,7 @@ def _extract_user_id(request: Request, body: OAIRequest) -> str:
     header_email = request.headers.get("x-openwebui-user-email")
     if header_email:
         return header_email
-    return get_default_user_id()
+    return "unknown"
 
 
 @router.get("/models", dependencies=[Depends(verify_api_key)])
