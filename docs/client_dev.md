@@ -157,7 +157,45 @@ assistant 응답을 그대로 저장       →   긴 응답 앞뒤 400자 압축
 
 ---
 
-## 6. 인증
+## 6. 토큰 사용량 (usage)
+
+모든 API 응답에 `usage` 필드가 **항상** 포함됩니다 (null이 아닌 0이라도 반환).
+
+### usage에 포함되는 값
+
+| 필드 | 설명 |
+|------|------|
+| `prompt_tokens` | 최종 답변 생성 LLM 호출의 입력 토큰 수 |
+| `completion_tokens` | 최종 답변 생성 LLM 호출의 출력 토큰 수 |
+| `total_tokens` | prompt_tokens + completion_tokens |
+
+### 주의사항
+
+- **최종 답변 생성 호출만** 카운트됨 (내부 의도 분류, 조건 추출 등은 미포함)
+- 내부 LLM 호출의 상세 토큰 사용량은 **Langfuse**에서 trace 단위로 확인 가능
+- LLM 호출 없이 응답하는 경우 (예: "데이터 없음") → `{0, 0, 0}` 반환
+- 스트리밍에서도 동일하게 usage 반환:
+  - `/api/chat`: `event: done`의 `usage` 필드
+  - `/v1/chat/completions`: `stream_options.include_usage=true` 시 마지막 chunk
+
+### 응답 예시
+
+```json
+{
+  "answer": "...",
+  "sources": [...],
+  "trace_id": "abc-123",
+  "usage": {
+    "prompt_tokens": 1500,
+    "completion_tokens": 500,
+    "total_tokens": 2000
+  }
+}
+```
+
+---
+
+## 7. 인증
 
 | 환경 | 설정 |
 |------|------|
@@ -171,7 +209,7 @@ Authorization: Bearer your-key
 
 ---
 
-## 7. 스트리밍 응답
+## 8. 스트리밍 응답
 
 ### `/v1/chat/completions` (OpenAI 형식)
 ```

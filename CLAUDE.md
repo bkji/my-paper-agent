@@ -115,8 +115,15 @@ Supervisor (3단계):
   ↓
 LLM 답변 생성 (시스템 프롬프트에 현재 날짜 자동 주입)
   ↓
-응답: {answer, sources, trace_id}
+응답: {answer, sources, trace_id, usage}
 ```
+
+## 토큰 사용량 (usage)
+
+- **API 응답**: 최종 답변 생성 LLM 호출의 usage만 반환 (`_set_final_usage`)
+- **내부 LLM 호출** (의도 분류, 조건 추출 등): Langfuse trace에서 개별 추적
+- **`ChatResponse.usage`는 필수** — 항상 반환 (0이라도). `extract_usage()` 헬퍼 사용
+- **멀티턴**: 서버는 stateless. 클라이언트가 messages에 이전 대화를 매번 전송
 
 ## 날짜 파싱 시스템 (`app/core/date_parser.py`)
 
