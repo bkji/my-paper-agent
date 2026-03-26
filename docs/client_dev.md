@@ -169,13 +169,21 @@ assistant 응답을 그대로 저장       →   긴 응답 앞뒤 400자 압축
 | `completion_tokens` | 최종 답변 생성 LLM 호출의 출력 토큰 수 |
 | `total_tokens` | prompt_tokens + completion_tokens |
 
+### stream on/off 토큰 수 일관성
+
+스트리밍(`stream: true`)과 비스트리밍(`stream: false`) 모두 **동일한 prompt_tokens**를 반환합니다.
+
+- 서버가 LLM에 `stream_options: {"include_usage": true}`를 전달하여 실제 토큰 수를 수신
+- LLM 서버가 usage를 제공하지 않거나 `0`을 반환하는 경우에만 글자수 기반 추정(`글자수 // 4`)으로 대체
+- `completion_tokens`는 LLM 생성의 자연스러운 변동으로 요청마다 약간 다를 수 있음
+
 ### 주의사항
 
 - **최종 답변 생성 호출만** 카운트됨 (내부 의도 분류, 조건 추출 등은 미포함)
 - 내부 LLM 호출의 상세 토큰 사용량은 **Langfuse**에서 trace 단위로 확인 가능
 - LLM 호출 없이 응답하는 경우 (예: "데이터 없음") → `{0, 0, 0}` 반환
 - 스트리밍에서도 동일하게 usage 반환:
-  - `/api/chat`: `event: done`의 `usage` 필드
+  - `/api/chat`, `/api/chat_v2`: `event: done`의 `usage` 필드
   - `/v1/chat/completions`: `stream_options.include_usage=true` 시 마지막 chunk
 
 ### 응답 예시
@@ -195,7 +203,21 @@ assistant 응답을 그대로 저장       →   긴 응답 앞뒤 400자 압축
 
 ---
 
-## 7. 인증
+## 7. URL 경로 (Trailing Slash)
+
+모든 API 엔드포인트는 **trailing slash(`/`) 유무와 관계없이 동일하게 동작**합니다.
+307 리다이렉트 없이 바로 200 응답합니다.
+
+| 경로 (둘 다 동일) | 설명 |
+|---|---|
+| `/api/chat` 또는 `/api/chat/` | 자체 Chat API |
+| `/api/chat_v2` 또는 `/api/chat_v2/` | Chat API v2 (SSE 개선) |
+| `/v1/chat/completions` 또는 `/v1/chat/completions/` | OpenAI 호환 API |
+| `/v1/models` 또는 `/v1/models/` | 모델 목록 |
+
+---
+
+## 8. 인증
 
 | 환경 | 설정 |
 |------|------|
@@ -209,17 +231,20 @@ Authorization: Bearer your-key
 
 ---
 
-## 8. 스트리밍 응답
+## 9. 스트리밍 응답
 
 ### `/v1/chat/completions` (OpenAI 형식)
 ```
-data: {"choices":[{"delta":{"role":"assistant","content":""},...}]}
-data: {"choices":[{"delta":{"content":"OLED"},...}]}
-data: {"choices":[{"delta":{"content":" 관련"},...}]}
+data: {"choices":[{"delta":{"role":"assistant","content":""},...}],"usage":null}
+data: {"choices":[{"delta":{"content":"OLED"},...}],"usage":null}
+data: {"choices":[{"delta":{"content":" 관련"},...}],"usage":null}
 ...
-data: {"choices":[{"delta":{},"finish_reason":"stop",...}]}
+data: {"choices":[{"delta":{},"finish_reason":"stop",...}],"usage":null}
+data: {"choices":[],"usage":{"prompt_tokens":578,"completion_tokens":450,"total_tokens":1028}}
 data: [DONE]
 ```
+
+> `stream_options: {"include_usage": true}`를 요청에 포함하면 마지막 chunk에 usage가 포함됩니다.
 
 ### `/api/chat` (자체 형식)
 ```
@@ -238,5 +263,7 @@ event: sources
 data: {"sources":[{"title":"...","doi":"...","score":0.85}]}
 
 event: done
-data: {"stream_id":"abc123","usage":{"prompt_tokens":1500,...}}
+data: {"stream_id":"abc123","usage":{"prompt_tokens":578,"completion_tokens":450,"total_tokens":1028}}
 ```
+
+> `done` 이벤트에 항상 `usage`가 포함됩니다. `/api/chat_v2`도 동일하며 추가로 `elapsed_ms` 필드를 포함합니다.

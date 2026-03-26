@@ -101,7 +101,7 @@ messages.append({"role": "assistant", "content": 응답2})
 
 | 항목 | 값 |
 |------|-----|
-| URL | `POST /api/chat` |
+| URL | `POST /api/chat` (또는 `/api/chat/` — trailing slash 동일 동작) |
 | Content-Type | `application/json` |
 | 인증 | Bearer token (`.env`의 `OPENAI_COMPAT_API_KEY` — 미설정 시 인증 없음) |
 | 서버 포트 | 20035 (기본값) |
@@ -227,7 +227,12 @@ curl -X POST http://localhost:20035/api/chat \
 {
   "answer": "string",
   "sources": [SourceDocument] | null,
-  "trace_id": "string | null"
+  "trace_id": "string | null",
+  "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0
+  }
 }
 ```
 
@@ -257,6 +262,12 @@ curl -X POST http://localhost:20035/api/chat \
 | `sources[].chunk_text` | `string` | 검색된 청크 텍스트 |
 | `sources[].score` | `float` | 유사도 점수 (0~1, 높을수록 관련성 높음) |
 | `trace_id` | `string \| null` | Langfuse 트레이싱 ID (디버깅용) |
+| `usage` | `object` | 토큰 사용량 (항상 반환, 최종 답변 생성 LLM 호출 기준) |
+| `usage.prompt_tokens` | `int` | 입력 토큰 수 |
+| `usage.completion_tokens` | `int` | 출력 토큰 수 |
+| `usage.total_tokens` | `int` | prompt_tokens + completion_tokens |
+
+> 스트리밍/비스트리밍 모두 동일한 `prompt_tokens`를 반환합니다. LLM 서버가 usage를 제공하지 않는 경우 글자수 기반 추정값으로 대체됩니다.
 
 ---
 
@@ -292,7 +303,7 @@ curl -X POST http://localhost:20035/api/chat \
 | `token` | `{"content": "..."}` | LLM 토큰 1개 | 수십~수백 회 |
 | `sources` | `{"sources": [...]}` | 참조 논문 목록 | 0~1회 |
 | `error` | `{"message": "..."}` | 에러 발생 시 | 0~1회 |
-| `done` | `{"stream_id": "..."}` | 스트리밍 완료 신호 | 항상 1회 (마지막) |
+| `done` | `{"stream_id": "...", "usage": {...}}` | 스트리밍 완료 신호 + 토큰 사용량 | 항상 1회 (마지막) |
 
 ### SSE 원시 데이터 예시
 
@@ -316,7 +327,7 @@ event: sources
 data: {"sources": [{"paper_id": "SID2024-001", "title": "Enhanced OLED Lifetime via Novel Host Materials", "doi": "10.1002/jsid.1234", "chunk_id": 0, "chunk_text": "...", "score": 0.92}]}
 
 event: done
-data: {"stream_id": "a1b2c3d4e5f6"}
+data: {"stream_id": "a1b2c3d4e5f6", "usage": {"prompt_tokens": 578, "completion_tokens": 450, "total_tokens": 1028}}
 ```
 
 ### 전체 답변 조립
