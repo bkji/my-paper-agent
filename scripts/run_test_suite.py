@@ -400,6 +400,7 @@ async def main():
     parser.add_argument("--agent", type=str, help="특정 에이전트만 테스트 (예: paper_qa)")
     parser.add_argument("--category", type=str, help="특정 카테고리만 (intent_check|answer_quality|date_filter|multi_turn|edge_case)")
     parser.add_argument("--intent-only", action="store_true", help="intent 분류만 테스트 (답변 생성 없이)")
+    parser.add_argument("--limit", type=int, default=0, help="테스트 건수 제한 (0=전체, 에이전트별 균등 샘플링)")
     parser.add_argument("--compare", action="store_true", help="이전 실행 결과와 비교")
     args = parser.parse_args()
 
@@ -410,6 +411,25 @@ async def main():
     ensure_results_table()
 
     tests = load_tests(agent=args.agent, category=args.category)
+
+    # --limit: 에이전트별 균등 샘플링
+    if args.limit and args.limit > 0 and len(tests) > args.limit:
+        import random as _rnd
+        _rnd.seed(42)
+        # 에이전트별로 그룹핑 후 균등 배분
+        by_agent = {}
+        for t in tests:
+            by_agent.setdefault(t["agent_type"], []).append(t)
+        per_agent = max(1, args.limit // len(by_agent))
+        sampled = []
+        for agent_tests in by_agent.values():
+            sampled.extend(_rnd.sample(agent_tests, min(per_agent, len(agent_tests))))
+        # 부족분 랜덤 보충
+        remaining = [t for t in tests if t not in sampled]
+        if len(sampled) < args.limit and remaining:
+            sampled.extend(_rnd.sample(remaining, min(args.limit - len(sampled), len(remaining))))
+        tests = sampled[:args.limit]
+
     if not tests:
         print("실행할 테스트가 없습니다. agent_test_suite 테이블을 확인하세요.")
         return
