@@ -22,7 +22,15 @@ curl -s -X POST "%BASE_URL%/api/chat/" ^
 
 echo.
 echo.
-echo [2] /v1/chat/completions (OpenAI 호환, 비스트리밍)
+echo [2] /api/chat (자체 API, 스트리밍)
+echo ------------------------------------------------------------
+curl -s -N -X POST "%BASE_URL%/api/chat/" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"query\": \"%QUERY%\", \"stream\": true}"
+
+echo.
+echo.
+echo [3] /v1/chat/completions (OpenAI 호환, 비스트리밍)
 echo ------------------------------------------------------------
 curl -s -X POST "%BASE_URL%/v1/chat/completions" ^
   -H "Content-Type: application/json" ^
@@ -34,7 +42,7 @@ curl -s -X POST "%BASE_URL%/v1/chat/completions" ^
 
 echo.
 echo.
-echo [3] /v1/chat/completions (OpenAI 호환, 스트리밍 + usage)
+echo [4] /v1/chat/completions (OpenAI 호환, 스트리밍 + usage)
 echo ------------------------------------------------------------
 curl -s -N -X POST "%BASE_URL%/v1/chat/completions" ^
   -H "Content-Type: application/json" ^
