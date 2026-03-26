@@ -267,3 +267,33 @@ data: {"stream_id":"abc123","usage":{"prompt_tokens":578,"completion_tokens":450
 ```
 
 > `done` 이벤트에 항상 `usage`가 포함됩니다. `/api/chat_v2`도 동일하며 추가로 `elapsed_ms` 필드를 포함합니다.
+
+---
+
+## 10. 테스트 스크립트
+
+`scripts/` 디렉토리에 API 동작 확인용 bat 파일이 있습니다.
+
+| 스크립트 | 용도 |
+|---|---|
+| `scripts/curl_test.bat` | 인증 포함 (Bearer 토큰 사용) |
+| `scripts/curl_test_no_api.bat` | 인증 없이 테스트 (`.env`에서 `OPENAI_COMPAT_API_KEY=` 빈값 설정 시) |
+
+### 테스트 항목 (4개)
+
+| # | 엔드포인트 | 모드 | 확인 포인트 |
+|---|---|---|---|
+| [1] | `/api/chat` | 비스트리밍 | JSON 응답 + usage |
+| [2] | `/api/chat` | 스트리밍 | SSE 이벤트 + done.usage |
+| [3] | `/v1/chat/completions` | 비스트리밍 | OpenAI 형식 응답 + usage |
+| [4] | `/v1/chat/completions` | 스트리밍 + usage | OpenAI SSE chunk + 마지막 usage chunk |
+
+### 사용 방법
+
+```bash
+# 인증 있는 환경
+scripts\curl_test.bat
+
+# 인증 없는 환경
+scripts\curl_test_no_api.bat
+```
