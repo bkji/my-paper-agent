@@ -19,6 +19,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=None, dependencies=[Depends(verify_api_key)])
+@router.post("", response_model=None, dependencies=[Depends(verify_api_key)], include_in_schema=False)
 async def chat(request: ChatRequest):
     logger.info("POST /api/chat: agent_type=%s, stream=%s, query=%s",
                 request.agent_type, request.stream, request.query[:100])
@@ -92,6 +93,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
         await queue.put(("status", "답변 생성 중..."))
 
         usage_out: dict = {}
+        full_response = ""
         try:
             async for token in llm.chat_completion_stream(
                 messages=llm_messages,
@@ -100,6 +102,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
                 user_id=state.get("user_id"),
                 usage_out=usage_out,
             ):
+                full_response += token
                 await queue.put(("token", token))
         except Exception as e:
             logger.error("[ChatStream] LLM streaming error: %s", e)
@@ -108,6 +111,14 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
         citation = format_citation_text(sources)
         if citation:
             await queue.put(("token", citation))
+
+        # usage_out이 비어있으면 추정 (LLM 서버가 스트리밍 usage를 지원하지 않는 경우)
+        if not usage_out.get("prompt_tokens"):
+            prompt_est = sum(len(m.get("content", "")) for m in llm_messages) // 4
+            comp_est = len(full_response) // 4
+            usage_out.setdefault("prompt_tokens", prompt_est)
+            usage_out.setdefault("completion_tokens", comp_est)
+            usage_out.setdefault("total_tokens", prompt_est + comp_est)
 
         await queue.put(("sources", sources))
         await queue.put(("usage", usage_out))
@@ -158,7 +169,7 @@ async def _stream_response(state: dict):
 
         yield _sse_event("done", {
             "stream_id": stream_id,
-            "usage": usage_data if usage_data else None,
+            "usage": usage_data or {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
         })
 
     except Exception as e:

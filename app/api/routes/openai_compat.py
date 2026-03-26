@@ -76,6 +76,7 @@ def _extract_user_id(request: Request, body: OAIRequest) -> str:
 
 
 @router.get("/models", dependencies=[Depends(verify_api_key)])
+@router.get("/models/", dependencies=[Depends(verify_api_key)], include_in_schema=False)
 async def list_models():
     return {
         "object": "list",
@@ -127,6 +128,7 @@ def _build_state(body: OAIRequest, user_id: str) -> dict:
 
 
 @router.post("/chat/completions", dependencies=[Depends(verify_api_key)])
+@router.post("/chat/completions/", dependencies=[Depends(verify_api_key)], include_in_schema=False)
 async def chat_completions(request: Request, body: OAIRequest):
     user_id = _extract_user_id(request, body)
     state = _build_state(body, user_id)
@@ -189,6 +191,7 @@ async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: s
             return result
 
         usage_out: dict = {}
+        full_response = ""
         try:
             async for token in llm.chat_completion_stream(
                 messages=llm_messages,
@@ -197,6 +200,7 @@ async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: s
                 user_id=user_id,
                 usage_out=usage_out,
             ):
+                full_response += token
                 await queue.put(("token", token))
         except Exception as e:
             logger.error("[OAIStream] LLM streaming error: %s", e)
@@ -205,6 +209,14 @@ async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: s
         citation = format_citation_text(sources)
         if citation:
             await queue.put(("token", citation))
+
+        # usage_out이 비어있으면 추정
+        if not usage_out.get("prompt_tokens"):
+            prompt_est = sum(len(m.get("content", "")) for m in llm_messages) // 4
+            comp_est = len(full_response) // 4
+            usage_out.setdefault("prompt_tokens", prompt_est)
+            usage_out.setdefault("completion_tokens", comp_est)
+            usage_out.setdefault("total_tokens", prompt_est + comp_est)
 
         await queue.put(("usage", usage_out))
         return result

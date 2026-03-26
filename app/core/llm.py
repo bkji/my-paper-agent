@@ -131,6 +131,7 @@ async def chat_completion_stream(
         "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": True,
+        "stream_options": {"include_usage": True},
     }
 
     full_response = ""
@@ -144,19 +145,22 @@ async def chat_completion_stream(
             if data_str.strip() == "[DONE]":
                 break
             chunk = json.loads(data_str)
-            delta = chunk["choices"][0].get("delta", {})
+            # 일부 서버는 마지막 chunk에 usage를 포함 (choices가 빈 배열)
+            if "usage" in chunk and chunk["usage"]:
+                usage_data = chunk["usage"]
+            choices = chunk.get("choices", [])
+            if not choices:
+                continue
+            delta = choices[0].get("delta", {})
             content = delta.get("content", "")
             if content:
                 full_response += content
                 yield content
-            # 일부 서버는 마지막 chunk에 usage를 포함
-            if "usage" in chunk and chunk["usage"]:
-                usage_data = chunk["usage"]
 
-    # 토큰 사용량 (서버가 제공하지 않으면 추정)
-    prompt_tokens = usage_data.get("prompt_tokens", 0)
-    completion_tokens = usage_data.get("completion_tokens") if "completion_tokens" in usage_data else len(full_response) // 4
-    total_tokens = usage_data.get("total_tokens") if "total_tokens" in usage_data else (prompt_tokens + completion_tokens)
+    # 토큰 사용량 (서버가 0 또는 미제공이면 글자수 기반 추정)
+    prompt_tokens = usage_data.get("prompt_tokens") or sum(len(m.get("content", "")) for m in messages) // 4
+    completion_tokens = usage_data.get("completion_tokens") or len(full_response) // 4
+    total_tokens = usage_data.get("total_tokens") or (prompt_tokens + completion_tokens)
 
     # 호출자에게 usage 전달
     if usage_out is not None:

@@ -104,6 +104,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
         await queue.put(("status", "답변 생성 중..."))
 
         usage_out: dict = {}
+        full_response = ""
         try:
             async for token in llm.chat_completion_stream(
                 messages=llm_messages,
@@ -112,6 +113,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
                 user_id=state.get("user_id"),
                 usage_out=usage_out,
             ):
+                full_response += token
                 await queue.put(("token", token))
         except Exception as e:
             logger.error("[ChatStreamV2] LLM streaming error: %s", e)
@@ -121,6 +123,14 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
         citation = format_citation_text(sources)
         if citation:
             await queue.put(("token", citation))
+
+        # usage_out이 비어있으면 추정
+        if not usage_out.get("prompt_tokens"):
+            prompt_est = sum(len(m.get("content", "")) for m in llm_messages) // 4
+            comp_est = len(full_response) // 4
+            usage_out.setdefault("prompt_tokens", prompt_est)
+            usage_out.setdefault("completion_tokens", comp_est)
+            usage_out.setdefault("total_tokens", prompt_est + comp_est)
 
         # Phase 4: 소스 + usage
         await queue.put(("sources", sources))
@@ -182,7 +192,7 @@ async def _stream_response_v2(state: dict):
         yield _sse("done", {
             "stream_id": stream_id,
             "elapsed_ms": _elapsed_ms(t_start),
-            "usage": usage_data if usage_data else None,
+            "usage": usage_data or {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
         })
 
     except Exception as e:
@@ -228,6 +238,7 @@ def _handle_queue_msg(msg_type: str, data, usage_data: dict):
 
 
 @router.post("/", response_model=None, dependencies=[Depends(verify_api_key)])
+@router.post("", response_model=None, dependencies=[Depends(verify_api_key)], include_in_schema=False)
 async def chat_v2(request: ChatRequest):
     """채팅 API v2 — SSE 스트리밍 개선 + Langfuse 1-trace 보장.
 
