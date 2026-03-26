@@ -28,7 +28,7 @@ from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
 from app.api.deps import verify_api_key, extract_usage
 from app.core import llm
-from app.core.langfuse_client import observe, trace_attributes, flush_langfuse
+from app.core.langfuse_client import observe, trace_attributes, flush_langfuse, set_trace_io
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -161,14 +161,18 @@ async def chat_completions(request: Request, body: OAIRequest):
 async def _non_stream_oai(state: dict, model: str, user_id: str) -> dict:
     """Non-streaming: @observe로 1 trace 보장."""
     with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}):
+        set_trace_io(input={"query": state.get("query", ""), "stream": False})
         result = await supervisor.ainvoke(state)
-    return _make_response(result.get("answer", ""), model, usage=extract_usage(result))
+    answer = result.get("answer", "")
+    set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(result.get("sources") or [])})
+    return _make_response(answer, model, usage=extract_usage(result))
 
 
 @observe(name="api_openai_compat_stream")
 async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: str):
     """@observe 안에서 전체 파이프라인 실행 → 1 trace 보장."""
     with trace_attributes(user_id=user_id, metadata={"source": "openai_compat_stream"}):
+        set_trace_io(input={"query": state.get("query", ""), "stream": True})
         state["metadata"]["_stream_mode"] = True
 
         try:
@@ -188,6 +192,7 @@ async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: s
             full_text = answer.rstrip() + citation
             await queue.put(("full_text", full_text))
             await queue.put(("usage", extract_usage(result)))
+            set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(sources)})
             return result
 
         usage_out: dict = {}
@@ -219,6 +224,12 @@ async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: s
             usage_out.setdefault("total_tokens", prompt_est + comp_est)
 
         await queue.put(("usage", usage_out))
+
+        set_trace_io(output={
+            "answer": (result.get("answer") or full_response)[:500],
+            "agent_type": (result.get("metadata") or {}).get("agent_type"),
+            "source_count": len(sources),
+        })
         return result
 
 

@@ -11,7 +11,7 @@ from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
 from app.api.deps import verify_api_key, build_chat_state, extract_usage
 from app.core import llm
-from app.core.langfuse_client import observe, trace_attributes, flush_langfuse
+from app.core.langfuse_client import observe, trace_attributes, flush_langfuse, set_trace_io
 from app.models.schemas import ChatRequest, ChatResponse, UsageInfo
 
 logger = logging.getLogger(__name__)
@@ -44,11 +44,14 @@ async def chat(request: ChatRequest):
 @observe(name="api_chat")
 async def _non_stream_chat(request: ChatRequest, state: dict) -> ChatResponse:
     with trace_attributes(user_id=request.user_id, metadata={"agent_type": request.agent_type or "auto"}):
+        set_trace_io(input={"query": request.query, "agent_type": request.agent_type, "stream": False})
         result = await supervisor.ainvoke(state)
 
     usage = extract_usage(result)
+    answer = result.get("answer", "")
+    set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(result.get("sources") or [])})
     return ChatResponse(
-        answer=result.get("answer", ""),
+        answer=answer,
         sources=result.get("sources"),
         trace_id=result.get("trace_id"),
         usage=UsageInfo(**usage),
@@ -70,6 +73,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
         user_id=state.get("user_id"),
         metadata={"source": "api_chat_stream"},
     ):
+        set_trace_io(input={"query": state.get("query", ""), "stream": True})
         await queue.put(("status", "논문 검색 및 질문 분석 중..."))
 
         try:
@@ -88,6 +92,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
             await queue.put(("token", answer))
             await queue.put(("sources", sources))
             await queue.put(("usage", extract_usage(result)))
+            set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(sources)})
             return result
 
         await queue.put(("status", "답변 생성 중..."))
@@ -123,6 +128,11 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
         await queue.put(("sources", sources))
         await queue.put(("usage", usage_out))
 
+        set_trace_io(output={
+            "answer": (result.get("answer") or full_response)[:500],
+            "agent_type": (result.get("metadata") or {}).get("agent_type"),
+            "source_count": len(sources),
+        })
         return result
 
 

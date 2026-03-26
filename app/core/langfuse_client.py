@@ -19,7 +19,7 @@ import atexit
 import logging
 import socket
 from contextlib import nullcontext
-from typing import Optional
+from typing import Any, Optional
 
 from app.config import settings
 
@@ -164,5 +164,21 @@ def add_trace_tags(tags: list[str]):
             trace_id = client.get_current_trace_id()
             if trace_id:
                 client._create_trace_tags_via_ingestion(trace_id=trace_id, tags=tags)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("add_trace_tags failed: %s", e)
+
+
+def set_trace_io(input: Any = None, output: Any = None):
+    """현재 trace의 input/output을 설정한다 (최상위 trace에 표시됨)."""
+    try:
+        client = _get_client()
+        if client:
+            kwargs = {}
+            if input is not None:
+                kwargs["input"] = input
+            if output is not None:
+                kwargs["output"] = output
+            if kwargs:
+                client.set_current_trace_io(**kwargs)
+    except Exception as e:
+        logger.debug("set_trace_io failed: %s", e)
