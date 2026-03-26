@@ -138,11 +138,29 @@ def extract_paper_title_from_history(state: dict) -> str | None:
 
 
 def _accumulate_usage(state: dict, usage_out: dict):
-    """토큰 사용량을 state.metadata.usage에 누적한다 (덮어쓰지 않음)."""
+    """토큰 사용량을 state.metadata.usage에 누적한다 (하위 호환용, 내부 합산).
+
+    주의: API 응답에는 _set_final_usage()로 설정된 최종 생성 usage만 반환.
+    이 함수는 내부 추적/디버깅 목적으로 유지.
+    """
     metadata = state.setdefault("metadata", {})
-    existing = metadata.setdefault("usage", {})
+    existing = metadata.setdefault("_internal_usage", {})
     for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
         existing[key] = existing.get(key, 0) + usage_out.get(key, 0)
+
+
+def _set_final_usage(state: dict, usage_out: dict):
+    """최종 답변 생성 LLM 호출의 토큰 사용량을 API 응답용으로 설정한다.
+
+    API 응답의 usage 필드에는 이 값만 반환된다.
+    내부 LLM 호출(의도 분류, 조건 추출 등)은 Langfuse에서 개별 추적.
+    """
+    metadata = state.setdefault("metadata", {})
+    metadata["usage"] = {
+        "prompt_tokens": usage_out.get("prompt_tokens", 0),
+        "completion_tokens": usage_out.get("completion_tokens", 0),
+        "total_tokens": usage_out.get("total_tokens", 0),
+    }
 
 
 def inject_date_context(system_prompt: str, state: dict | None = None) -> str:
@@ -271,8 +289,9 @@ async def llm_json_call(
         user_id=user_id,
         usage_out=usage_out,
     )
+    # 내부 호출(분류/조건추출 등) → _internal_usage에만 누적, API 응답 usage에는 미포함
     if state is not None and usage_out:
-        _accumulate_usage(state, usage_out)
+        _accumulate_usage(state, usage_out)  # _internal_usage에 누적
     cleaned = raw.strip()
     if "```json" in cleaned:
         cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
@@ -317,9 +336,9 @@ async def llm_text_call(
         user_id=user_id,
         usage_out=usage_out,
     )
-    # usage를 state metadata에 누적 저장 → API 응답에서 활용
+    # 최종 답변 생성 → API 응답 usage에 설정 (내부 호출 합산이 아닌 이 호출만)
     if state is not None and usage_out:
-        _accumulate_usage(state, usage_out)
+        _set_final_usage(state, usage_out)
     return result
 
 

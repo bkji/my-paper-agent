@@ -6,7 +6,7 @@ import logging
 from langgraph.graph import StateGraph, END
 
 from app.agents.state import AgentState
-from app.agents.common import retrieve_by_query, format_context, build_sources, inject_date_context, llm_json_call, extract_paper_title_from_history, _accumulate_usage
+from app.agents.common import retrieve_by_query, format_context, build_sources, inject_date_context, llm_json_call, extract_paper_title_from_history, _set_final_usage
 from app.core import llm, database
 
 logger = logging.getLogger(__name__)
@@ -187,7 +187,7 @@ async def generate(state: AgentState) -> AgentState:
 
     state["answer"] = answer
     if usage_out:
-        _accumulate_usage(state, usage_out)
+        _set_final_usage(state, usage_out)
     state["sources"] = build_sources(search_results)
     logger.info("[PaperQA] generate done: answer_len=%d", len(answer))
     return state
