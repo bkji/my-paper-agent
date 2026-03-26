@@ -26,7 +26,7 @@ from pydantic import BaseModel
 
 from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
-from app.api.deps import verify_api_key
+from app.api.deps import verify_api_key, extract_usage
 from app.core import llm
 from app.core.langfuse_client import observe, trace_attributes, flush_langfuse
 
@@ -160,8 +160,7 @@ async def _non_stream_oai(state: dict, model: str, user_id: str) -> dict:
     """Non-streaming: @observe로 1 trace 보장."""
     with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}):
         result = await supervisor.ainvoke(state)
-    usage = (result.get("metadata") or {}).get("usage") or {}
-    return _make_response(result.get("answer", ""), model, usage=usage)
+    return _make_response(result.get("answer", ""), model, usage=extract_usage(result))
 
 
 @observe(name="api_openai_compat_stream")
@@ -186,8 +185,7 @@ async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: s
             citation = format_citation_text(sources)
             full_text = answer.rstrip() + citation
             await queue.put(("full_text", full_text))
-            usage = (result.get("metadata") or {}).get("usage") or {}
-            await queue.put(("usage", usage))
+            await queue.put(("usage", extract_usage(result)))
             return result
 
         usage_out: dict = {}

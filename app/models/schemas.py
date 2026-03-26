@@ -43,7 +43,7 @@ class ChatResponse(BaseModel):
     answer: str
     sources: Optional[list[SourceDocument]] = None
     trace_id: Optional[str] = None
-    usage: Optional[UsageInfo] = None
+    usage: UsageInfo = UsageInfo()
 
 
 class IngestRequest(BaseModel):

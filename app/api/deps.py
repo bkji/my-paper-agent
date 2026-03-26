@@ -40,3 +40,13 @@ def build_chat_state(request: ChatRequest) -> dict:
     if request.agent_type:
         state["metadata"]["agent_type"] = request.agent_type
     return state
+
+
+def extract_usage(result: dict) -> dict:
+    """supervisor 결과에서 usage를 추출한다. 항상 유효한 dict를 반환."""
+    usage = (result.get("metadata") or {}).get("usage") or {}
+    return {
+        "prompt_tokens": usage.get("prompt_tokens", 0),
+        "completion_tokens": usage.get("completion_tokens", 0),
+        "total_tokens": usage.get("total_tokens", 0),
+    }

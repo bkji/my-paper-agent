@@ -18,7 +18,7 @@ from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
 from app.agents.supervisor import supervisor
 from app.agents.citation_agent import format_citation_text
-from app.api.deps import verify_api_key, build_chat_state
+from app.api.deps import verify_api_key, build_chat_state, extract_usage
 from app.core import llm
 from app.core.langfuse_client import observe, trace_attributes, flush_langfuse
 from app.models.schemas import ChatRequest, ChatResponse, UsageInfo
@@ -53,12 +53,12 @@ async def _non_stream_response(request: ChatRequest, state: dict) -> ChatRespons
         metadata={"agent_type": request.agent_type or "auto", "source": "api_chat_v2"},
     ):
         result = await supervisor.ainvoke(state)
-    usage = (result.get("metadata") or {}).get("usage") or {}
+    usage = extract_usage(result)
     return ChatResponse(
         answer=result.get("answer", ""),
         sources=result.get("sources"),
         trace_id=result.get("trace_id"),
-        usage=UsageInfo(**usage) if usage else None,
+        usage=UsageInfo(**usage),
     )
 
 
@@ -97,8 +97,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
             answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
             await queue.put(("token", answer))
             await queue.put(("sources", sources))
-            usage = (result.get("metadata") or {}).get("usage") or {}
-            await queue.put(("usage", usage))
+            await queue.put(("usage", extract_usage(result)))
             return result
 
         # Phase 2: LLM 실시간 스트리밍
