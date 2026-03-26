@@ -13,11 +13,11 @@ set QUERY=24년 11월 논문 리스트
 
 echo [1] /api/chat (자체 API, 비스트리밍)
 echo ------------------------------------------------------------
-curl -s -X POST "%BASE_URL%/api/chat" ^
+curl -s -X POST "%BASE_URL%/api/chat/" ^
   -H "Content-Type: application/json" ^
   -H "Authorization: Bearer %API_KEY%" ^
   -d "{\"query\": \"%QUERY%\", \"stream\": false}" | python -m json.tool --no-ensure-ascii 2>nul || (
-    curl -s -X POST "%BASE_URL%/api/chat" ^
+    curl -s -X POST "%BASE_URL%/api/chat/" ^
       -H "Content-Type: application/json" ^
       -H "Authorization: Bearer %API_KEY%" ^
       -d "{\"query\": \"%QUERY%\", \"stream\": false}"
