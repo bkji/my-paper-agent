@@ -10,6 +10,7 @@
 ## 1. `/v1/chat/completions` (OpenAI 호환 API)
 
 Open WebUI 등 OpenAI 호환 클라이언트에서 사용하는 엔드포인트.
+**`query` 필드 없이 `messages`만으로 동작** — 서버가 마지막 user 메시지에서 질문을 자동 추출합니다.
 
 ### 1턴째
 ```json
@@ -18,7 +19,8 @@ Open WebUI 등 OpenAI 호환 클라이언트에서 사용하는 엔드포인트.
   "messages": [
     {"role": "user", "content": "OLED 최신 논문 알려줘"}
   ],
-  "stream": true
+  "stream": true,
+  "stream_options": {"include_usage": true}
 }
 ```
 
@@ -31,7 +33,8 @@ Open WebUI 등 OpenAI 호환 클라이언트에서 사용하는 엔드포인트.
     {"role": "assistant", "content": "OLED 관련 논문은... [1] Kim et al..."},
     {"role": "user", "content": "1번째 논문을 자세히 분석해줘"}
   ],
-  "stream": true
+  "stream": true,
+  "stream_options": {"include_usage": true}
 }
 ```
 
@@ -46,22 +49,27 @@ Open WebUI 등 OpenAI 호환 클라이언트에서 사용하는 엔드포인트.
     {"role": "assistant", "content": "이 논문의 핵심은..."},
     {"role": "user", "content": "참조 문헌 3번은 어떤 내용이야?"}
   ],
-  "stream": true
+  "stream": true,
+  "stream_options": {"include_usage": true}
 }
 ```
 
-> Open WebUI를 사용하면 이 과정이 **자동으로** 처리됩니다.
+> - Open WebUI를 사용하면 이 과정이 **자동으로** 처리됩니다.
+> - `stream_options: {"include_usage": true}` — 스트리밍 마지막 chunk에 토큰 사용량(usage)이 포함됩니다. 생략하면 usage를 받을 수 없습니다.
 
 ---
 
 ## 2. `/api/chat` (자체 API)
 
 직접 개발하는 클라이언트에서 사용하는 엔드포인트.
+**`query`(현재 질문)가 필수**이며, `messages`에 이전 대화 히스토리를 전달합니다.
+스트리밍 시 usage는 `done` 이벤트에 항상 포함되므로 별도 옵션이 필요 없습니다.
 
 ### 1턴째
 ```json
 {
-  "query": "OLED 최신 논문 알려줘"
+  "query": "OLED 최신 논문 알려줘",
+  "stream": true
 }
 ```
 
@@ -90,6 +98,16 @@ Open WebUI 등 OpenAI 호환 클라이언트에서 사용하는 엔드포인트.
 ```
 
 > `query`는 현재 질문, `messages`는 이전 대화 히스토리입니다.
+
+### 두 API 비교
+
+| 항목 | `/v1/chat/completions` | `/api/chat` |
+|------|----------------------|------------|
+| 형식 | OpenAI 호환 | 자체 형식 |
+| 질문 전달 | `messages` 마지막 user 메시지 (자동 추출) | **`query` 필드 필수** |
+| 대화 히스토리 | `messages`에 전체 대화 포함 | `messages`에 이전 대화 (현재 질문 제외) |
+| 스트리밍 usage | `stream_options: {"include_usage": true}` **필요** | `done` 이벤트에 **항상 포함** |
+| 용도 | Open WebUI 등 외부 클라이언트 | 직접 개발하는 클라이언트 |
 
 ---
 
