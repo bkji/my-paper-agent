@@ -180,13 +180,15 @@ async def fetch_data(state: AgentState) -> AgentState:
     author = filters.get("author") or metadata.get("analytics_author")
     volume = metadata.get("analytics_volume")
     issue = metadata.get("analytics_issue")
+    extra_keywords = metadata.get("domain_extra_keywords")
 
     # 키워드 유효성 검증: keyword로 검색해서 0건이면 keyword 제거 후 재시도
     # (0.6B 모델이 hallucinate하여 잘못된 키워드를 추출하는 경우 방어)
     if keyword:
         test_data = await database.list_papers(
             coverdate_from=coverdate_from, coverdate_to=coverdate_to,
-            keyword=keyword, author=author, volume=volume, issue=issue, limit=1,
+            keyword=keyword, author=author, volume=volume, issue=issue,
+            extra_keywords=extra_keywords, limit=1,
         )
         if not test_data:
             logger.warning("[Analytics] keyword '%s' returned 0 results, retrying without keyword", keyword)
@@ -203,6 +205,7 @@ async def fetch_data(state: AgentState) -> AgentState:
             group_by=group_by,
             volume=volume,
             issue=issue,
+            extra_keywords=extra_keywords,
         )
         state["search_results"] = data
 
@@ -223,7 +226,8 @@ async def fetch_data(state: AgentState) -> AgentState:
             if re.search(r'경향|트렌드|동향|분석', query):
                 detail_data = await database.list_papers(
                     coverdate_from=coverdate_from, coverdate_to=coverdate_to,
-                    keyword=keyword, author=author, volume=volume, issue=issue, limit=100,
+                    keyword=keyword, author=author, volume=volume, issue=issue,
+                    extra_keywords=extra_keywords, limit=100,
                 )
                 if detail_data:
                     lines.append("\n## 논문 상세 목록 (카테고리 분류용)\n")
@@ -260,6 +264,7 @@ async def fetch_data(state: AgentState) -> AgentState:
             author=author,
             volume=volume,
             issue=issue,
+            extra_keywords=extra_keywords,
             limit=100,
         )
         state["search_results"] = data

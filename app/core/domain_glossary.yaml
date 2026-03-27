@@ -1,0 +1,31 @@
+# 사내 도메인 용어 → 표준 검색 키워드 매핑
+# 새 용어 추가 시 이 파일만 편집하면 됨
+#
+# aliases: 사내에서 사용하는 약어/은어 목록
+# canonical: 표준 영문 용어 (로그/디버깅용)
+# search_keywords: 실제 논문에서 사용되는 검색 키워드 (영문 + 한글)
+
+terms:
+  - aliases: ["P공정", "P기술", "포토공정", "포토 공정"]
+    canonical: "photolithography process"
+    search_keywords: ["photo", "photolithography", "포토", "노광", "lithography", "exposure"]
+
+  - aliases: ["E공정", "E기술", "식각공정", "식각 공정"]
+    canonical: "etching process"
+    search_keywords: ["etch", "etching", "식각", "dry etch", "wet etch"]
+
+  - aliases: ["D공정", "D기술", "증착공정", "증착 공정"]
+    canonical: "deposition process"
+    search_keywords: ["deposition", "CVD", "PVD", "증착", "sputtering", "evaporation"]
+
+  - aliases: ["TFT공정", "TFT 공정"]
+    canonical: "TFT process"
+    search_keywords: ["TFT", "thin film transistor", "박막트랜지스터", "thin-film transistor"]
+
+  - aliases: ["봉지공정", "봉지 공정", "인캡"]
+    canonical: "encapsulation process"
+    search_keywords: ["encapsulation", "봉지", "encap", "barrier", "thin film encapsulation"]
+
+  - aliases: ["백플레인", "BP공정"]
+    canonical: "backplane"
+    search_keywords: ["backplane", "백플레인", "back plane", "LTPS", "oxide TFT"]

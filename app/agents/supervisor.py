@@ -19,6 +19,7 @@ from app.agents.state import AgentState
 from app.core.langfuse_client import observe, langfuse_context, add_trace_tags
 from app.core.date_parser import extract_date_filters
 from app.core.tools import get_current_datetime, get_current_date_context
+from app.core.domain_glossary import glossary
 from app.agents.common import llm_json_call
 from app.agents.citation_agent import append_citation
 
@@ -432,6 +433,43 @@ async def extract_conditions(state: AgentState) -> AgentState:
     return state
 
 
+@observe(name="supervisor_expand_domain_terms")
+async def expand_domain_terms(state: AgentState) -> AgentState:
+    """사내 도메인 용어를 표준 검색 키워드로 확장한다.
+
+    예: "P공정 관련 논문" → query에 (photo, photolithography, 포토, 노광) 추가
+    """
+    query = state.get("query", "")
+    metadata = state.get("metadata") or {}
+    langfuse_context(input={"query": query})
+
+    result = glossary.expand_query(query)
+
+    if not result["matched_terms"]:
+        langfuse_context(output={"matched": False})
+        return state
+
+    logger.info("[Supervisor] domain term expansion: %s",
+                [(m["alias"], m["canonical"]) for m in result["matched_terms"]])
+
+    # 원본 쿼리 보존
+    metadata["original_query"] = query
+    metadata["domain_term_matches"] = result["matched_terms"]
+
+    # 벡터 검색용: query 확장 (원본 + 키워드)
+    state["query"] = result["expanded_query"]
+
+    # SQL 검색용: extra_keywords 저장
+    metadata["domain_extra_keywords"] = result["extra_keywords"]
+
+    state["metadata"] = metadata
+    langfuse_context(output={
+        "matched_terms": [(m["alias"], m["canonical"]) for m in result["matched_terms"]],
+        "expanded_query": result["expanded_query"],
+    })
+    return state
+
+
 @observe(name="supervisor_classify")
 async def classify_intent(state: AgentState) -> AgentState:
     """사용자 쿼리의 의도를 분류하여 적절한 agent_type을 결정한다."""
@@ -524,10 +562,11 @@ async def route_to_agent(state: AgentState) -> AgentState:
 def build_supervisor() -> StateGraph:
     """Supervisor agent graph를 구성한다.
 
-    흐름: extract_dates → extract_conditions → classify_intent → route_to_agent → append_citation
+    흐름: extract_dates → extract_conditions → expand_domain_terms → classify_intent → route_to_agent → append_citation
 
     - extract_dates: regex 기반 빠른 날짜 추출
     - extract_conditions: LLM 기반 추가 조건 추출 (키워드, 저자, DOI, volume, issue + 날짜 보완)
+    - expand_domain_terms: 사내 도메인 용어를 표준 검색 키워드로 확장
     - classify_intent: LLM 기반 의도 분류
     - route_to_agent: 해당 에이전트 실행
     - append_citation: 참조 문헌 + 저작권 고지
@@ -536,13 +575,15 @@ def build_supervisor() -> StateGraph:
     graph.add_node("build_history", build_history)
     graph.add_node("extract_dates", extract_dates)
     graph.add_node("extract_conditions", extract_conditions)
+    graph.add_node("expand_domain_terms", expand_domain_terms)
     graph.add_node("classify_intent", classify_intent)
     graph.add_node("route_to_agent", route_to_agent)
     graph.add_node("append_citation", append_citation)
     graph.set_entry_point("build_history")
     graph.add_edge("build_history", "extract_dates")
     graph.add_edge("extract_dates", "extract_conditions")
-    graph.add_edge("extract_conditions", "classify_intent")
+    graph.add_edge("extract_conditions", "expand_domain_terms")
+    graph.add_edge("expand_domain_terms", "classify_intent")
     graph.add_edge("classify_intent", "route_to_agent")
     graph.add_edge("route_to_agent", "append_citation")
     graph.add_edge("append_citation", END)

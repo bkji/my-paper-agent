@@ -162,8 +162,16 @@ async def save_paper(paper: dict[str, Any], **kwargs) -> str:
     return paper_id
 
 
-def _build_keyword_conditions(keyword: str, params: dict[str, Any]) -> str:
-    """키워드 검색 조건을 생성한다. 복합 키워드('Micro LED')는 변형도 함께 검색."""
+def _build_keyword_conditions(
+    keyword: str,
+    params: dict[str, Any],
+    extra_keywords: list[str] | None = None,
+) -> str:
+    """키워드 검색 조건을 생성한다. 복합 키워드('Micro LED')는 변형도 함께 검색.
+
+    Args:
+        extra_keywords: 사내 도메인 용어 확장 키워드. OR 조건으로 추가.
+    """
     # 기본 LIKE 검색
     conditions = ["(title LIKE :kw OR paper_keyword LIKE :kw OR bm25_keywords LIKE :kw)"]
     params["kw"] = f"%{keyword}%"
@@ -180,6 +188,16 @@ def _build_keyword_conditions(keyword: str, params: dict[str, Any]) -> str:
         conditions.append("(title LIKE :kw_join OR paper_keyword LIKE :kw_join OR bm25_keywords LIKE :kw_join)")
         params["kw_join"] = f"%{joined}%"
 
+    # 사내 도메인 용어 확장 키워드 추가
+    if extra_keywords:
+        for i, ek in enumerate(extra_keywords):
+            param_name = f"kw_dom_{i}"
+            conditions.append(
+                f"(title LIKE :{param_name} OR paper_keyword LIKE :{param_name} "
+                f"OR bm25_keywords LIKE :{param_name})"
+            )
+            params[param_name] = f"%{ek}%"
+
     return "(" + " OR ".join(conditions) + ")"
 
 
@@ -192,6 +210,7 @@ async def aggregate_papers(
     group_by: str = "month",
     volume: int | None = None,
     issue: int | None = None,
+    extra_keywords: list[str] | None = None,
     **kwargs,
 ) -> list[dict[str, Any]]:
     """논문을 기간/키워드/저자별로 집계한다. MariaDB에서 직접 SQL 수행.
@@ -217,7 +236,10 @@ async def aggregate_papers(
         where_parts.append("coverdate <= :cd_to")
         params["cd_to"] = int(coverdate_to)
     if keyword:
-        where_parts.append(_build_keyword_conditions(keyword, params))
+        where_parts.append(_build_keyword_conditions(keyword, params, extra_keywords))
+    elif extra_keywords:
+        # keyword 없이 도메인 용어 확장 키워드만 있는 경우
+        where_parts.append(_build_keyword_conditions(extra_keywords[0], params, extra_keywords[1:]))
     if author:
         where_parts.append("author LIKE :au")
         params["au"] = f"%{author}%"
@@ -267,6 +289,7 @@ async def list_papers(
     limit: int = 100,
     volume: int | None = None,
     issue: int | None = None,
+    extra_keywords: list[str] | None = None,
     **kwargs,
 ) -> list[dict[str, Any]]:
     """조건에 맞는 논문 목록을 반환한다 (chunk_id=1만, 중복 없는 논문 단위).
@@ -285,7 +308,9 @@ async def list_papers(
         where_parts.append("coverdate <= :cd_to")
         params["cd_to"] = int(coverdate_to)
     if keyword:
-        where_parts.append(_build_keyword_conditions(keyword, params))
+        where_parts.append(_build_keyword_conditions(keyword, params, extra_keywords))
+    elif extra_keywords:
+        where_parts.append(_build_keyword_conditions(extra_keywords[0], params, extra_keywords[1:]))
     if author:
         where_parts.append("author LIKE :au")
         params["au"] = f"%{author}%"
