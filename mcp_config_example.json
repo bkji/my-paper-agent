@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "co-scientist": {
+      "command": "D:/WPy64-312101_paper/python/python.exe",
+      "args": ["D:/work/0320_db_gen/tool/mcp_server.py"],
+      "env": {
+        "PYTHONPATH": "D:/work/0320_db_gen/tool"
+      }
+    }
+  }
+}
