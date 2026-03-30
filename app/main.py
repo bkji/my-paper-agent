@@ -7,7 +7,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import chat, chat_v2, documents, agents, openai_compat
-from app.core.langfuse_client import init_langfuse, flush_langfuse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+from app.core.langfuse_client import init_langfuse, flush_langfuse, shutdown_langfuse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -25,6 +28,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class LangfuseFlushMiddleware(BaseHTTPMiddleware):
+    """모든 요청 완료 후 Langfuse 버퍼를 플러시하여 trace 유실을 방지한다.
+
+    스트리밍 응답은 각 route의 finally에서 이미 flush하므로,
+    이 미들웨어는 비스트리밍 요청의 안전망 역할을 한다.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # 스트리밍 응답이 아닌 경우에만 flush (스트리밍은 route에서 직접 처리)
+        content_type = response.headers.get("content-type", "")
+        if "text/event-stream" not in content_type:
+            flush_langfuse()
+        return response
+
+
+app.add_middleware(LangfuseFlushMiddleware)
 
 
 @app.get("/")
@@ -60,5 +82,5 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    flush_langfuse()
+    shutdown_langfuse()
     logger.info("Co-Scientist Agent shut down")

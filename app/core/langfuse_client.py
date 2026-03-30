@@ -68,7 +68,7 @@ def init_langfuse() -> bool:
             host=settings.LANGFUSE_HOST,
         )
         _initialized = True
-        atexit.register(flush_langfuse)
+        atexit.register(shutdown_langfuse)
         logger.info("Langfuse v3 initialized (host=%s)", settings.LANGFUSE_HOST)
         return True
     except Exception as e:
@@ -77,14 +77,35 @@ def init_langfuse() -> bool:
 
 
 def flush_langfuse():
-    """Langfuse 버퍼를 플러시한다."""
+    """Langfuse 버퍼를 플러시한다.
+
+    @observe 데코레이터가 span을 닫은 뒤에 호출해야 trace가 유실되지 않는다.
+    """
     try:
         from langfuse import get_client
         client = get_client()
-        client.flush()
-        logger.debug("Langfuse flushed")
+        if client:
+            client.flush()
+            logger.debug("Langfuse flushed successfully")
+        else:
+            logger.debug("Langfuse flush skipped — no client")
     except Exception as e:
         logger.warning("Langfuse flush failed: %s", e)
+
+
+def shutdown_langfuse():
+    """Langfuse client를 종료한다 (앱 종료 시 호출).
+
+    shutdown()은 내부적으로 flush() 후 worker thread까지 정리한다.
+    """
+    try:
+        from langfuse import get_client
+        client = get_client()
+        if client:
+            client.shutdown()
+            logger.info("Langfuse shutdown completed")
+    except Exception as e:
+        logger.warning("Langfuse shutdown failed: %s", e)
 
 
 # @observe 데코레이터 & context 헬퍼 — langfuse 미설치 시 no-op fallback

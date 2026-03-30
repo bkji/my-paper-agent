@@ -55,7 +55,7 @@ class Settings:
 
     # --- 서버 설정 ---
     SERVER_HOST: str = os.getenv("SERVER_HOST", "0.0.0.0")
-    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "20035"))
+    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "20031"))
 
     # --- RAG 파라미터 ---
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "512"))
@@ -64,6 +64,9 @@ class Settings:
 
     # --- 참조 문헌 옵션 ---
     SHOW_CITATION_SCORE: bool = os.getenv("SHOW_CITATION_SCORE", "false").lower() in ("true", "1", "yes")
+
+    # --- 도메인 용어 확장 ---
+    DOMAIN_GLOSSARY_ENABLED: bool = os.getenv("DOMAIN_GLOSSARY_ENABLED", "false").lower() in ("true", "1", "yes")
 
 
 settings = Settings()

@@ -19,6 +19,7 @@ from app.agents.state import AgentState
 from app.core.langfuse_client import observe, langfuse_context, add_trace_tags
 from app.core.date_parser import extract_date_filters
 from app.core.tools import get_current_datetime, get_current_date_context
+from app.config import settings
 from app.core.domain_glossary import glossary
 from app.agents.common import llm_json_call
 from app.agents.citation_agent import append_citation
@@ -442,6 +443,10 @@ async def expand_domain_terms(state: AgentState) -> AgentState:
     query = state.get("query", "")
     metadata = state.get("metadata") or {}
     langfuse_context(input={"query": query})
+
+    if not settings.DOMAIN_GLOSSARY_ENABLED:
+        langfuse_context(output={"skipped": True, "reason": "DOMAIN_GLOSSARY_ENABLED=false"})
+        return state
 
     result = glossary.expand_query(query)
 
