@@ -189,6 +189,11 @@ async def _stream_response(state: dict):
     finally:
         if not task.done():
             task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+        # @observe span이 완전히 닫힌 뒤 flush (trace 유실 방지)
         flush_langfuse()
 
 

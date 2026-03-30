@@ -216,6 +216,11 @@ async def _stream_response_v2(state: dict):
     finally:
         if not task.done():
             task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+        # @observe span이 완전히 닫힌 뒤 flush (trace 유실 방지)
         flush_langfuse()
         logger.info(
             "[ChatStreamV2] stream_id=%s completed (%.1fs)",
