@@ -50,6 +50,8 @@ async def _non_stream_chat(request: ChatRequest, state: dict) -> ChatResponse:
     usage = extract_usage(result)
     answer = result.get("answer", "")
     set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(result.get("sources") or [])})
+    # @observe span이 닫힌 뒤 flush (observation 유실 방지)
+    flush_langfuse()
     return ChatResponse(
         answer=answer,
         sources=result.get("sources"),

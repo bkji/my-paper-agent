@@ -248,19 +248,34 @@ async def retrieve_by_query(
     return results
 
 
+# 동시 검색 수 제한 — 임베딩/Milvus 서버 과부하 방지
+_SEARCH_SEMAPHORE = asyncio.Semaphore(5)
+
+
+async def _retrieve_with_limit(
+    query: str,
+    user_id: str | None,
+    filters: dict | None,
+    top_k: int,
+) -> list[dict]:
+    """세마포어로 동시 검색 수를 제한한다."""
+    async with _SEARCH_SEMAPHORE:
+        return await retrieve_by_query(query, user_id=user_id, filters=filters, top_k=top_k)
+
+
 async def multi_query_retrieve(
     queries: list[str],
     user_id: str | None = None,
     filters: dict | None = None,
     top_k_per_query: int = 3,
 ) -> list[dict]:
-    """여러 쿼리로 검색하여 결과를 합친다 (중복 제거, 병렬 실행)."""
+    """여러 쿼리로 검색하여 결과를 합친다 (중복 제거, 병렬 실행, 동시성 제한)."""
     if not queries:
         return []
 
-    # 모든 쿼리를 병렬로 실행
+    # 모든 쿼리를 병렬로 실행 (세마포어로 동시 5개 제한)
     tasks = [
-        retrieve_by_query(q, user_id=user_id, filters=filters, top_k=top_k_per_query)
+        _retrieve_with_limit(q, user_id=user_id, filters=filters, top_k=top_k_per_query)
         for q in queries
     ]
     results_list = await asyncio.gather(*tasks)
