@@ -1,5 +1,6 @@
 """Idea Generator Agent — 논문 교차 분석 기반 연구 아이디어를 제안한다."""
 from __future__ import annotations
+import asyncio
 import logging
 from langgraph.graph import StateGraph, END
 from app.agents.state import AgentState
@@ -28,10 +29,19 @@ async def decompose_topic(state: AgentState) -> AgentState:
 
 async def cross_retrieve(state: AgentState) -> AgentState:
     sub_topics = state.get("metadata", {}).get("sub_topics", [])
+    user_id = state.get("user_id")
+    filters = state.get("filters")
+
+    # 모든 sub_topic을 병렬로 검색
+    tasks = [
+        multi_query_retrieve(queries=topic.get("search_queries", []),
+                             user_id=user_id, filters=filters, top_k_per_query=3)
+        for topic in sub_topics
+    ]
+    results_list = await asyncio.gather(*tasks)
+
     all_results, topic_contexts = [], []
-    for topic in sub_topics:
-        results = await multi_query_retrieve(queries=topic.get("search_queries", []), user_id=state.get("user_id"),
-                                              filters=state.get("filters"), top_k_per_query=3)
+    for topic, results in zip(sub_topics, results_list):
         all_results.extend(results)
         ctx = format_context(results) if results else "(No papers found)"
         topic_contexts.append(f"## Sub-topic: {topic['name']} ({topic.get('domain','')})\n\n{ctx}")

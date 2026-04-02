@@ -1,6 +1,7 @@
 """Literature Survey Agent — 주제별 문헌 리뷰를 자동 생성한다."""
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from langgraph.graph import StateGraph, END
@@ -59,11 +60,17 @@ async def multi_retrieve(state: AgentState) -> AgentState:
     user_id = state.get("user_id")
     filters = state.get("filters")
 
+    # 모든 섹션을 병렬로 검색
+    tasks = [
+        multi_query_retrieve(queries=section.get("search_queries", []),
+                             user_id=user_id, filters=filters, top_k_per_query=3)
+        for section in sections
+    ]
+    results_list = await asyncio.gather(*tasks)
+
     all_results = []
     section_contexts = []
-    for section in sections:
-        queries = section.get("search_queries", [])
-        results = await multi_query_retrieve(queries=queries, user_id=user_id, filters=filters, top_k_per_query=3)
+    for section, results in zip(sections, results_list):
         all_results.extend(results)
         ctx = format_context(results) if results else "(No relevant papers found)"
         section_contexts.append(f"## {section['title']}\n\n{ctx}")

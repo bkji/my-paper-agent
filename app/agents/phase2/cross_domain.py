@@ -1,5 +1,6 @@
 """Cross-domain Connector Agent — 타 분야 접근법을 디스플레이에 적용 제안한다."""
 from __future__ import annotations
+import asyncio
 import logging
 from langgraph.graph import StateGraph, END
 from app.agents.state import AgentState
@@ -30,17 +31,29 @@ async def extract_problem(state: AgentState) -> AgentState:
 
 async def search_analogies(state: AgentState) -> AgentState:
     cross_queries = state.get("metadata", {}).get("cross_search_queries", [])
-    all_results, domain_contexts = [], []
-    for group in cross_queries:
-        results = await multi_query_retrieve(queries=group.get("queries",[]), user_id=state.get("user_id"),
-                                              filters=state.get("filters"), top_k_per_query=3)
+    user_id = state.get("user_id")
+    filters = state.get("filters")
+
+    # 타 도메인 검색 + display 원본 검색을 모두 병렬로 실행
+    domain_tasks = [
+        multi_query_retrieve(queries=group.get("queries", []),
+                             user_id=user_id, filters=filters, top_k_per_query=3)
+        for group in cross_queries
+    ]
+    display_task = multi_query_retrieve(queries=[state.get("query", "")],
+                                        user_id=user_id, filters=filters, top_k_per_query=3)
+    all_task_results = await asyncio.gather(display_task, *domain_tasks)
+
+    display_results = all_task_results[0]
+    domain_results_list = all_task_results[1:]
+
+    all_results = list(display_results)
+    domain_contexts = [f"## Domain: Display (original)\n\n{format_context(display_results)}"]
+    for group, results in zip(cross_queries, domain_results_list):
         all_results.extend(results)
         ctx = format_context(results) if results else "(No papers found)"
-        domain_contexts.append(f"## Domain: {group.get('domain','')}\n\n{ctx}")
-    display_results = await multi_query_retrieve(queries=[state.get("query","")], user_id=state.get("user_id"),
-                                                  filters=state.get("filters"), top_k_per_query=3)
-    all_results.extend(display_results)
-    domain_contexts.insert(0, f"## Domain: Display (original)\n\n{format_context(display_results)}")
+        domain_contexts.append(f"## Domain: {group.get('domain', '')}\n\n{ctx}")
+
     state["search_results"] = all_results
     state["context"] = "\n\n".join(domain_contexts)
     return state
