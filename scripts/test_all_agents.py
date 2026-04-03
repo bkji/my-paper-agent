@@ -249,9 +249,10 @@ async def main():
     save_results_to_mariadb(results)
 
     # JSON 결과 파일 저장
-    with open("_test_results.json", "w", encoding="utf-8") as f:
+    os.makedirs("output", exist_ok=True)
+    with open("output/_test_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
-    print("_test_results.json 저장 완료")
+    print("output/_test_results.json 저장 완료")
 
 
 if __name__ == "__main__":

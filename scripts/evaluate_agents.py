@@ -304,9 +304,10 @@ async def main():
         "filter_accuracy": filter_result,
         "e2e_pipeline": e2e_result,
     }
-    with open("_eval_report.json", "w", encoding="utf-8") as f:
+    os.makedirs("output", exist_ok=True)
+    with open("output/_eval_report.json", "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2, default=str)
-    print(f"\n평가 보고서 저장: _eval_report.json")
+    print(f"\n평가 보고서 저장: output/_eval_report.json")
 
 
 if __name__ == "__main__":

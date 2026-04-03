@@ -215,5 +215,8 @@ langfuse.md
 # 임시 파일
 _tmp_*
 
+# 스크립트 실행 결과물
+output/
+
 # Claude Code
 .claude/
