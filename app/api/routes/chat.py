@@ -43,7 +43,7 @@ async def chat(request: ChatRequest):
 
 async def _non_stream_chat(request: ChatRequest, state: dict) -> ChatResponse:
     """trace_attributes를 @observe 바깥에서 설정하여 Unnamed trace 방지."""
-    with trace_attributes(user_id=request.user_id, metadata={"agent_type": request.agent_type or "auto"}):
+    with trace_attributes(user_id=request.user_id, metadata={"agent_type": request.agent_type or "auto"}, trace_name="api_chat"):
         return await _non_stream_chat_observed(request, state)
 
 
@@ -78,6 +78,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
     with trace_attributes(
         user_id=state.get("user_id"),
         metadata={"source": "api_chat_stream"},
+        trace_name="api_chat_stream",
     ):
         return await _run_stream_pipeline_observed(state, queue)
 

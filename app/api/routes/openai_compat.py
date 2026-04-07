@@ -159,7 +159,7 @@ async def chat_completions(request: Request, body: OAIRequest):
 
 async def _non_stream_oai(state: dict, model: str, user_id: str) -> dict:
     """trace_attributes를 @observe 바깥에서 설정하여 Unnamed trace 방지."""
-    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}):
+    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}, trace_name="api_openai_compat"):
         return await _non_stream_oai_observed(state, model, user_id)
 
 
@@ -175,7 +175,7 @@ async def _non_stream_oai_observed(state: dict, model: str, user_id: str) -> dic
 
 async def _run_oai_stream_pipeline(state: dict, queue: asyncio.Queue, user_id: str):
     """trace_attributes를 @observe 바깥에서 설정하여 Unnamed trace 방지."""
-    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat_stream"}):
+    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat_stream"}, trace_name="api_openai_compat_stream"):
         return await _run_oai_stream_pipeline_observed(state, queue, user_id)
 
 

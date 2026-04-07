@@ -50,6 +50,7 @@ async def _non_stream_response(request: ChatRequest, state: dict) -> ChatRespons
     with trace_attributes(
         user_id=request.user_id,
         metadata={"agent_type": request.agent_type or "auto", "source": "api_chat_v2"},
+        trace_name="api_chat_v2",
     ):
         return await _non_stream_response_observed(request, state)
 
@@ -80,6 +81,7 @@ async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
     with trace_attributes(
         user_id=state.get("user_id"),
         metadata={"source": "api_chat_v2_stream"},
+        trace_name="api_chat_v2_stream",
     ):
         return await _run_stream_pipeline_observed(state, queue)
 

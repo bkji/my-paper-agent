@@ -131,8 +131,17 @@ except Exception:
 def trace_attributes(
     user_id: Optional[str] = None,
     metadata: Optional[dict] = None,
+    trace_name: Optional[str] = None,
 ):
-    """trace-level 속성을 하위 @observe 호출에 전파하는 context manager."""
+    """trace-level 속성을 하위 @observe 호출에 전파하는 context manager.
+
+    주의: @observe 데코레이터 **바깥에서** 호출해야 trace 속성이 올바르게 적용된다.
+    @observe 안에서 호출하면 Unnamed trace가 생성될 수 있다.
+
+    올바른 사용:
+        with trace_attributes(user_id="kim", trace_name="my_trace"):
+            await my_observe_decorated_function()
+    """
     effective_user_id = user_id or get_default_user_id()
     host_info = get_host_info()
     merged_metadata = {
@@ -140,10 +149,13 @@ def trace_attributes(
         "ip": host_info["ip"],
         **(metadata or {}),
     }
-    return _propagate_attributes(
+    kwargs = dict(
         user_id=effective_user_id,
         metadata=merged_metadata,
     )
+    if trace_name:
+        kwargs["trace_name"] = trace_name
+    return _propagate_attributes(**kwargs)
 
 
 def langfuse_context(**kwargs):
