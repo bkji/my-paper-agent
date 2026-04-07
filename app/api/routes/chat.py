@@ -41,11 +41,16 @@ async def chat(request: ChatRequest):
     return await _non_stream_chat(request, state)
 
 
-@observe(name="api_chat")
 async def _non_stream_chat(request: ChatRequest, state: dict) -> ChatResponse:
+    """trace_attributes를 @observe 바깥에서 설정하여 Unnamed trace 방지."""
     with trace_attributes(user_id=request.user_id, metadata={"agent_type": request.agent_type or "auto"}):
-        set_trace_io(input={"query": request.query, "agent_type": request.agent_type, "stream": False})
-        result = await supervisor.ainvoke(state)
+        return await _non_stream_chat_observed(request, state)
+
+
+@observe(name="api_chat")
+async def _non_stream_chat_observed(request: ChatRequest, state: dict) -> ChatResponse:
+    set_trace_io(input={"query": request.query, "agent_type": request.agent_type, "stream": False})
+    result = await supervisor.ainvoke(state)
 
     usage = extract_usage(result)
     answer = result.get("answer", "")
@@ -68,74 +73,79 @@ def _sse_event(event: str, data: dict) -> str:
 # ── 스트리밍: @observe pipeline + Queue ──────────────────────────
 
 
-@observe(name="api_chat_stream")
 async def _run_stream_pipeline(state: dict, queue: asyncio.Queue):
-    """@observe 안에서 전체 파이프라인 실행 → 1 trace 보장."""
+    """trace_attributes를 @observe 바깥에서 설정하여 Unnamed trace 방지."""
     with trace_attributes(
         user_id=state.get("user_id"),
         metadata={"source": "api_chat_stream"},
     ):
-        set_trace_io(input={"query": state.get("query", ""), "stream": True})
-        await queue.put(("status", "논문 검색 및 질문 분석 중..."))
+        return await _run_stream_pipeline_observed(state, queue)
 
-        try:
-            result = await supervisor.ainvoke(state)
-        except Exception as e:
-            logger.error("[ChatStream] supervisor error: %s", e)
-            await queue.put(("error", f"처리 중 오류 발생: {e}"))
-            return {}
 
-        llm_messages = (result.get("metadata") or {}).get("_llm_messages")
-        temperature = (result.get("metadata") or {}).get("_llm_temperature", 0.3)
-        sources = result.get("sources") or []
+@observe(name="api_chat_stream")
+async def _run_stream_pipeline_observed(state: dict, queue: asyncio.Queue):
+    """@observe 안에서 전체 파이프라인 실행 → 1 trace 보장."""
+    set_trace_io(input={"query": state.get("query", ""), "stream": True})
+    await queue.put(("status", "논문 검색 및 질문 분석 중..."))
 
-        if not llm_messages:
-            answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
-            await queue.put(("token", answer))
-            await queue.put(("sources", sources))
-            await queue.put(("usage", extract_usage(result)))
-            set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(sources)})
-            return result
+    try:
+        result = await supervisor.ainvoke(state)
+    except Exception as e:
+        logger.error("[ChatStream] supervisor error: %s", e)
+        await queue.put(("error", f"처리 중 오류 발생: {e}"))
+        return {}
 
-        await queue.put(("status", "답변 생성 중..."))
+    llm_messages = (result.get("metadata") or {}).get("_llm_messages")
+    temperature = (result.get("metadata") or {}).get("_llm_temperature", 0.3)
+    sources = result.get("sources") or []
 
-        usage_out: dict = {}
-        full_response = ""
-        try:
-            async for token in llm.chat_completion_stream(
-                messages=llm_messages,
-                temperature=temperature,
-                trace_name="chat_stream_generate",
-                user_id=state.get("user_id"),
-                usage_out=usage_out,
-            ):
-                full_response += token
-                await queue.put(("token", token))
-        except Exception as e:
-            logger.error("[ChatStream] LLM streaming error: %s", e)
-            await queue.put(("error", f"답변 생성 중 오류: {e}"))
-
-        citation = format_citation_text(sources)
-        if citation:
-            await queue.put(("token", citation))
-
-        # usage_out이 비어있으면 추정 (LLM 서버가 스트리밍 usage를 지원하지 않는 경우)
-        if not usage_out.get("prompt_tokens"):
-            prompt_est = sum(len(m.get("content", "")) for m in llm_messages) // 4
-            comp_est = len(full_response) // 4
-            usage_out.setdefault("prompt_tokens", prompt_est)
-            usage_out.setdefault("completion_tokens", comp_est)
-            usage_out.setdefault("total_tokens", prompt_est + comp_est)
-
+    if not llm_messages:
+        answer = result.get("answer", "관련 논문을 찾지 못했습니다.")
+        await queue.put(("token", answer))
         await queue.put(("sources", sources))
-        await queue.put(("usage", usage_out))
-
-        set_trace_io(output={
-            "answer": (result.get("answer") or full_response)[:500],
-            "agent_type": (result.get("metadata") or {}).get("agent_type"),
-            "source_count": len(sources),
-        })
+        await queue.put(("usage", extract_usage(result)))
+        set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(sources)})
         return result
+
+    await queue.put(("status", "답변 생성 중..."))
+
+    usage_out: dict = {}
+    full_response = ""
+    try:
+        async for token in llm.chat_completion_stream(
+            messages=llm_messages,
+            temperature=temperature,
+            trace_name="chat_stream_generate",
+            user_id=state.get("user_id"),
+            usage_out=usage_out,
+        ):
+            full_response += token
+            await queue.put(("token", token))
+    except Exception as e:
+        logger.error("[ChatStream] LLM streaming error: %s", e)
+        await queue.put(("error", f"답변 생성 중 오류: {e}"))
+
+    citation = format_citation_text(sources)
+    if citation:
+        await queue.put(("token", citation))
+
+    # usage_out이 비어있으면 추정 (LLM 서버가 스트리밍 usage를 지원하지 않는 경우)
+    if not usage_out.get("prompt_tokens"):
+        prompt_est = sum(len(m.get("content", "")) for m in llm_messages) // 4
+        comp_est = len(full_response) // 4
+        usage_out.setdefault("prompt_tokens", prompt_est)
+        usage_out.setdefault("completion_tokens", comp_est)
+        usage_out.setdefault("total_tokens", prompt_est + comp_est)
+
+    await queue.put(("sources", sources))
+    await queue.put(("usage", usage_out))
+
+    set_trace_io(output={
+        "answer": (result.get("answer") or full_response)[:500],
+        "agent_type": (result.get("metadata") or {}).get("agent_type"),
+        "source_count": len(sources),
+    })
+    return result
 
 
 async def _stream_response(state: dict):
