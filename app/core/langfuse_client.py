@@ -202,16 +202,34 @@ def add_trace_tags(tags: list[str]):
 
 
 def set_trace_io(input: Any = None, output: Any = None):
-    """현재 trace의 input/output을 설정한다 (최상위 trace에 표시됨)."""
+    """현재 trace + 현재 span의 input/output을 설정한다.
+
+    Langfuse SDK v4 (OTel 기반)에서는 trace-level IO만으로는 UI에 표시되지 않을 수 있다.
+    현재 @observe span의 input/output도 함께 설정하여 확실히 표시되도록 한다.
+    """
     try:
         client = _get_client()
-        if client:
-            kwargs = {}
-            if input is not None:
-                kwargs["input"] = input
-            if output is not None:
-                kwargs["output"] = output
-            if kwargs:
-                client.set_current_trace_io(**kwargs)
+        if not client:
+            return
+
+        kwargs = {}
+        if input is not None:
+            kwargs["input"] = input
+        if output is not None:
+            kwargs["output"] = output
+        if not kwargs:
+            return
+
+        # 1) trace-level IO 설정
+        try:
+            client.set_current_trace_io(**kwargs)
+        except Exception:
+            pass
+
+        # 2) 현재 span IO도 설정 (OTel 기반 SDK에서 UI 표시 보장)
+        try:
+            client.update_current_span(**kwargs)
+        except Exception:
+            pass
     except Exception as e:
         logger.debug("set_trace_io failed: %s", e)

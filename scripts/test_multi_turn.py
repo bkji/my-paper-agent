@@ -30,33 +30,38 @@ CONVERSATION = [
 
 
 @observe(name="multi_turn_query")
-async def call_agent(query: str, user_id: str, messages: list[dict]):
+async def call_agent(query: str, user_id: str, messages: list[dict], turn: int = 1):
     """supervisor를 직접 호출 — 이전 대화 히스토리 포함."""
-    set_trace_io(input={
-        "query": query,
-        "user_id": user_id,
-        "turn": len(messages) // 2 + 1,
-    })
+    with trace_attributes(
+        user_id=user_id,
+        trace_name=f"test_multi_turn_t{turn}",
+        metadata={"source": "script", "turn": str(turn)},
+    ):
+        set_trace_io(input={
+            "query": query,
+            "user_id": user_id,
+            "turn": turn,
+        })
 
-    state = {
-        "query": query,
-        "user_id": user_id,
-        "filters": {},
-        "metadata": {},
-    }
-    # 이전 대화 히스토리를 metadata.messages에 전달 → supervisor.build_history에서 처리
-    if messages:
-        state["metadata"]["messages"] = messages
+        state = {
+            "query": query,
+            "user_id": user_id,
+            "filters": {},
+            "metadata": {},
+        }
+        # 이전 대화 히스토리를 metadata.messages에 전달 → supervisor.build_history에서 처리
+        if messages:
+            state["metadata"]["messages"] = messages
 
-    result = await supervisor.ainvoke(state)
+        result = await supervisor.ainvoke(state)
 
-    answer = result.get("answer", "")
-    agent_type = (result.get("metadata") or {}).get("agent_type")
-    set_trace_io(output={
-        "answer": answer[:500],
-        "agent_type": agent_type,
-    })
-    return result
+        answer = result.get("answer", "")
+        agent_type = (result.get("metadata") or {}).get("agent_type")
+        set_trace_io(output={
+            "answer": answer[:500],
+            "agent_type": agent_type,
+        })
+        return result
 
 
 async def main(user_id: str, queries: list[str]):
@@ -78,16 +83,7 @@ async def main(user_id: str, queries: list[str]):
         # 현재 사용자 질문을 히스토리에 추가
         messages.append({"role": "user", "content": query})
 
-        with trace_attributes(
-            user_id=user_id,
-            trace_name=f"test_multi_turn_t{turn}",
-            metadata={
-                "source": "script",
-                "session_id": session_id,
-                "turn": str(turn),
-            },
-        ):
-            result = await call_agent(query, user_id, messages)
+        result = await call_agent(query, user_id, messages, turn=turn)
 
         flush_langfuse()
 
