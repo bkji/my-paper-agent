@@ -48,18 +48,12 @@ def _elapsed_ms(t_start: float) -> int:
 @observe(name="api_chat_v2")
 async def _non_stream_response(request: ChatRequest, state: dict) -> ChatResponse:
     """Non-streaming: @observe로 전체 구간 트레이싱."""
-    with trace_attributes(
-        user_id=request.user_id,
-        metadata={"agent_type": request.agent_type or "auto", "source": "api_chat_v2"},
-        trace_name="api_chat_v2",
-    ):
-        set_trace_io(input={"query": request.query, "agent_type": request.agent_type, "stream": False})
-        result = await supervisor.ainvoke(state)
+    set_trace_io(input={"query": request.query, "agent_type": request.agent_type, "stream": False})
+    result = await supervisor.ainvoke(state)
     usage = extract_usage(result)
     answer = result.get("answer", "")
     set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(result.get("sources") or [])})
-    # @observe span이 닫힌 뒤 flush (observation 유실 방지)
-    flush_langfuse()
+    # flush는 LangfuseFlushMiddleware가 @observe span 종료 후 처리
     return ChatResponse(
         answer=answer,
         sources=result.get("sources"),
@@ -295,5 +289,10 @@ async def chat_v2(request: ChatRequest):
             ping=15,
         )
 
-    # Non-streaming — @observe가 전체 구간을 커버
-    return await _non_stream_response(request, state)
+    # Non-streaming — trace_attributes를 @observe 바깥에서 설정
+    with trace_attributes(
+        user_id=request.user_id,
+        metadata={"agent_type": request.agent_type or "auto", "source": "api_chat_v2"},
+        trace_name="api_chat_v2",
+    ):
+        return await _non_stream_response(request, state)

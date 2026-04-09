@@ -79,7 +79,20 @@ def init_langfuse() -> bool:
 def flush_langfuse():
     """Langfuse 버퍼를 플러시한다.
 
-    @observe 데코레이터가 span을 닫은 뒤에 호출해야 trace가 유실되지 않는다.
+    중요: @observe 데코레이터로 감싼 함수의 **바깥에서** 호출해야 한다.
+    @observe 함수 안에서 flush하면 span이 아직 열려있는 상태에서
+    불완전한 데이터가 전송되어 trace가 유실될 수 있다. (GitHub #2495)
+
+    올바른 사용:
+        result = await my_observe_decorated_function()
+        flush_langfuse()  # @observe가 span을 닫은 뒤
+
+    잘못된 사용:
+        @observe(name="my_func")
+        async def my_func():
+            ...
+            flush_langfuse()  # ← span이 아직 열려있음 → trace 유실!
+            return result
     """
     try:
         from langfuse import get_client

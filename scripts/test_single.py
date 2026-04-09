@@ -21,30 +21,25 @@ from app.agents.supervisor import supervisor
 @observe(name="single_query")
 async def call_agent(query: str, user_id: str):
     """supervisor를 직접 호출하여 에이전트 실행."""
-    with trace_attributes(
-        user_id=user_id,
-        trace_name="test_single",
-        metadata={"source": "script"},
-    ):
-        set_trace_io(input={"query": query, "user_id": user_id})
+    set_trace_io(input={"query": query, "user_id": user_id})
 
-        state = {
-            "query": query,
-            "user_id": user_id,
-            "filters": {},
-            "metadata": {},
-        }
-        result = await supervisor.ainvoke(state)
+    state = {
+        "query": query,
+        "user_id": user_id,
+        "filters": {},
+        "metadata": {},
+    }
+    result = await supervisor.ainvoke(state)
 
-        answer = result.get("answer", "")
-        sources = result.get("sources") or []
-        agent_type = (result.get("metadata") or {}).get("agent_type")
-        set_trace_io(output={
-            "answer": answer[:500],
-            "agent_type": agent_type,
-            "source_count": len(sources),
-        })
-        return result
+    answer = result.get("answer", "")
+    sources = result.get("sources") or []
+    agent_type = (result.get("metadata") or {}).get("agent_type")
+    set_trace_io(output={
+        "answer": answer[:500],
+        "agent_type": agent_type,
+        "source_count": len(sources),
+    })
+    return result
 
 
 async def main(query: str, user_id: str):
@@ -54,8 +49,15 @@ async def main(query: str, user_id: str):
     print(f"[사용자] {user_id}")
     print("-" * 60)
 
-    result = await call_agent(query, user_id)
+    # trace_attributes를 @observe 바깥에서 설정해야 trace 속성이 올바르게 적용됨
+    with trace_attributes(
+        user_id=user_id,
+        trace_name="test_single",
+        metadata={"source": "script"},
+    ):
+        result = await call_agent(query, user_id)
 
+    # @observe span이 닫힌 뒤에 flush (span 안에서 flush하면 trace 유실)
     flush_langfuse()
 
     answer = result.get("answer", "")

@@ -153,16 +153,20 @@ async def chat_completions(request: Request, body: OAIRequest):
             },
         )
 
-    # Non-streaming
-    return await _non_stream_oai(state, body.model, user_id)
+    # Non-streaming — trace_attributes를 @observe 바깥에서 설정
+    with trace_attributes(
+        user_id=user_id,
+        metadata={"source": "openai_compat"},
+        trace_name="api_openai_compat",
+    ):
+        return await _non_stream_oai(state, body.model, user_id)
 
 
 @observe(name="api_openai_compat")
 async def _non_stream_oai(state: dict, model: str, user_id: str) -> dict:
     """Non-streaming: @observe로 1 trace 보장."""
-    with trace_attributes(user_id=user_id, metadata={"source": "openai_compat"}, trace_name="api_openai_compat"):
-        set_trace_io(input={"query": state.get("query", ""), "stream": False})
-        result = await supervisor.ainvoke(state)
+    set_trace_io(input={"query": state.get("query", ""), "stream": False})
+    result = await supervisor.ainvoke(state)
     answer = result.get("answer", "")
     set_trace_io(output={"answer": answer[:500], "agent_type": (result.get("metadata") or {}).get("agent_type"), "source_count": len(result.get("sources") or [])})
     return _make_response(answer, model, usage=extract_usage(result))
