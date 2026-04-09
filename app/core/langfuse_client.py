@@ -21,6 +21,8 @@ import socket
 from contextlib import nullcontext
 from typing import Any, Optional
 
+import httpx
+
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -66,6 +68,7 @@ def init_langfuse() -> bool:
             public_key=settings.LANGFUSE_PUBLIC_KEY,
             secret_key=settings.LANGFUSE_SECRET_KEY,
             host=settings.LANGFUSE_HOST,
+            httpx_client=httpx.Client(proxy=None),
         )
         _initialized = True
         atexit.register(shutdown_langfuse)

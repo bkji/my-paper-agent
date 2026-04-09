@@ -23,6 +23,7 @@ def _get_http_client() -> httpx.AsyncClient:
             headers={"Authorization": f"Bearer {settings.EMBEDDING_API_KEY}"},
             timeout=httpx.Timeout(connect=10.0, read=120.0, write=10.0, pool=30.0),
             limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+            proxy=None,
         )
     return _http_client
 

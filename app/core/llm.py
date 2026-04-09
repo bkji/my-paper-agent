@@ -22,6 +22,7 @@ def _get_http_client() -> httpx.AsyncClient:
             base_url=settings.LLM_BASE_URL,
             headers={"Authorization": f"Bearer {settings.LLM_API_KEY}"},
             timeout=httpx.Timeout(connect=10.0, read=600.0, write=10.0, pool=10.0),
+            proxy=None,
         )
     return _http_client
 
