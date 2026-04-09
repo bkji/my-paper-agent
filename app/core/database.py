@@ -75,11 +75,11 @@ async def get_paper_fulltext_by_doi(doi: str, **kwargs) -> dict[str, Any] | None
 
     logger.info("get_paper_fulltext_by_doi: doi=%s", doi)
 
-    sql = """
+    sql = f"""
         SELECT mariadb_id, filename, doi, coverdate, title, paper_keyword,
                paper_text, volume, issue, totalpage, referencetotal,
                author, `references`, chunk_id, chunk_total_counts
-        FROM sid_v_09_01
+        FROM {settings.MARIADB_TABLE}
         WHERE (chunk_id = 1 OR chunk_id IS NULL)
           AND doi LIKE :doi_pattern
         ORDER BY coverdate DESC
@@ -266,7 +266,7 @@ async def aggregate_papers(
         SELECT {period_expr} AS period,
                COUNT(*) AS cnt,
                GROUP_CONCAT(DISTINCT LEFT(title, 80) SEPARATOR ' || ') AS titles
-        FROM sid_v_09_01
+        FROM {settings.MARIADB_TABLE}
         WHERE {where_clause}
         GROUP BY {group_expr}
         ORDER BY {group_expr}
@@ -326,7 +326,7 @@ async def list_papers(
 
     sql = f"""
         SELECT mariadb_id, filename, doi, coverdate, title, paper_keyword, author, volume, issue
-        FROM sid_v_09_01
+        FROM {settings.MARIADB_TABLE}
         WHERE {where_clause}
         ORDER BY coverdate DESC
         LIMIT :lim
@@ -357,11 +357,11 @@ async def get_paper_fulltext_by_title(title_query: str, **kwargs) -> dict[str, A
 
     logger.info("get_paper_fulltext_by_title: title_query=%s", title_query[:80])
 
-    sql = """
+    sql = f"""
         SELECT mariadb_id, filename, doi, coverdate, title, paper_keyword,
                paper_text, volume, issue, totalpage, referencetotal,
                author, `references`, chunk_id, chunk_total_counts
-        FROM sid_v_09_01
+        FROM {settings.MARIADB_TABLE}
         WHERE (chunk_id = 1 OR chunk_id IS NULL)
           AND title LIKE :tq
         ORDER BY coverdate DESC

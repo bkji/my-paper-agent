@@ -36,6 +36,7 @@ class Settings:
     MARIADB_USER: str = os.getenv("MARIADB_USER", "root")
     MARIADB_PASSWORD: str = os.getenv("MARIADB_PASSWORD", "")
     MARIADB_DATABASE: str = os.getenv("MARIADB_DATABASE", "paper")
+    MARIADB_TABLE: str = os.getenv("MARIADB_TABLE", "sid_v_09_01")
     MARIADB_URL: str = os.getenv(
         "MARIADB_URL",
         f"mysql+pymysql://{os.getenv('MARIADB_USER', 'root')}:"
